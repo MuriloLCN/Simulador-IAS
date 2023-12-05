@@ -10,8 +10,6 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
-#define int64 int64_t
-
 int main()
 {
     FILE* arq_dados = fopen("teste.txt", "r");
@@ -27,6 +25,8 @@ int main()
         __int64 j = _atoi64(linha);
         printf("\n[tam: %d] '%s' -> %" PRIi64 "", tam_palavra, linha, j);
     }
+
+    // Só pra não fechar imediatamente o prompt de comando no windows
     int t;
     scanf("%d", &t);
 }
