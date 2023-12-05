@@ -22,7 +22,8 @@ int main()
             linha[tam_palavra - 1] = '\0';
         }
 
-        __int64 j = _atoi64(linha);
+        //__int64 j = _atoi64(linha);
+        int64_t j = strtoimax(linha, NULL, 10);
         printf("\n[tam: %d] '%s' -> %" PRIi64 "", tam_palavra, linha, j);
     }
 
