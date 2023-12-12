@@ -48,6 +48,36 @@ int GetOperand (char instruction[], char operand[])
     return 0;
 }
 
+int memLocation (char *instruction, int index)
+{
+    char num[5];
+    int i = 0, int_num;
+    while (instruction[index] == '0' ||
+           instruction[index] == '1' ||
+           instruction[index] == '2' ||
+           instruction[index] == '3' ||
+           instruction[index] == '4' ||
+           instruction[index] == '5' ||
+           instruction[index] == '6' ||
+           instruction[index] == '7' ||
+           instruction[index] == '8' ||
+           instruction[index] == '9')
+    {
+        if (i > 3) return -1; // erro, endereço de memória de tamanho maior que 4 digitos
+        else
+        {
+            num[i] = instruction[index];
+            i++; 
+            index++;
+        }
+    }
+    num[i] = '\0';
+
+    int_num = atoi(num);
+    if (int_num <= 4095) return int_num; // verifica se o endereço de memória tá dentro dos valores permitidos
+    else return -1;
+}
+
 /*
 Instruções - Opcode
 LOAD MQ - 00001010
@@ -164,11 +194,41 @@ int main ()
         // printf("\n %d: %s", linha, instruction);
         printf("\n");
 
-        if (startsWith(instruction,"LOAD"))
+        //+/+/+/+/+/+/ CASOS LOAD /+/+/+/+/+/+/+/+/+/+/+/+/
+        if (startsWith(instruction,"LOAD MQ,M("))
         {
             // Todos os casos de load entram aqui...
-            printf("> linha %d era um LOAD", linha);
+            printf("> linha %d era um LOAD MQ,M(%d)", linha, memLocation(instruction, 10));
         }
+        else if (startsWith(instruction,"LOAD MQ"))
+        {
+            // Todos os casos de stor entram aqui...
+            printf("> linha %d era um LOAD MQ", linha);
+        }
+        else if (startsWith(instruction,"LOAD M("))
+        {
+            
+            // Todos os casos de stor entram aqui...
+            printf("> linha %d era um LOAD M(%d)", linha, memLocation(instruction, 7));
+        }
+        else if (startsWith(instruction,"LOAD -M("))
+        {
+            // Todos os casos de stor entram aqui...
+            printf("> linha %d era um LOAD -M(%d)", linha, memLocation(instruction, 8));
+        }
+        else if (startsWith(instruction,"LOAD |M("))
+        {
+            // Todos os casos de stor entram aqui...
+            printf("> linha %d era um LOAD |M(%d)", linha, memLocation(instruction, 8));
+        }
+        else if (startsWith(instruction,"LOAD -|M("))
+        {
+            // Todos os casos de stor entram aqui...
+            printf("> linha %d era um LOAD -|M(%d)", linha, memLocation(instruction, 9));
+        }
+
+        //+/+/+/+/+/+/ CASOS STOR /+/+/+/+/+/+/+/+/+/+/+/+/
+
         else if (startsWith(instruction,"STOR"))
         {
             // Todos os casos de stor entram aqui...
