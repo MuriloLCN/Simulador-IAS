@@ -176,6 +176,185 @@ booleano endsWith(char* palavra, char* sufixo)
     return True;
 }
 
+void converteInstrucao(char* instruction, char* opcode, int* endereco)
+{
+    /*
+        Converte uma instrução em seu respectivo OPCODE e endereço
+        Parâmetros:
+        char* instruction: A instrução a ser convertida
+        char* opcode: Uma string para receber o opcode convertido
+        int* endereco: Um inteiro para receber o endereço convertido
+        Exemplo:
+        instruction = LOAD-M(57) -> opcode = "00000001" & endereco = 57
+
+        Em caso de erro (instrução não reconhecida), retorna "00000000" para o opcode e -1 para o endereço
+    */
+    if (startsWith(instruction,"LOAD-MQ,M("))
+    {
+        // Opcode: 00001001
+        // Inicio endereço: posicao 10
+        strcpy(opcode, "00001001");
+        *endereco = memLocation(instruction, 10);
+    }
+    else if (startsWith(instruction,"LOAD-MQ"))
+    {
+        // Opcode: 00001010
+        // Não há endereço a ser lido
+        strcpy(opcode, "00001010");
+        *endereco = 0;
+    }
+    else if (startsWith(instruction,"LOAD-M("))
+    {
+        // Opcode 00000001
+        // Início endereço: 7
+        strcpy(opcode, "00000001");
+        *endereco = memLocation(instruction, 7);
+    }
+    else if (startsWith(instruction,"LOAD--M("))
+    {
+        // Opcode 00000010
+        // Início endereço: 8
+        strcpy(opcode, "000010010");
+        *endereco = memLocation(instruction, 8);
+    }
+    else if (startsWith(instruction,"LOAD-|M("))
+    {
+        // Opcode 00000011
+        // Início endereço: 8
+        strcpy(opcode, "00000011");
+        *endereco = memLocation(instruction, 8);
+    }
+    else if (startsWith(instruction,"LOAD--|M("))
+    {
+        // Opcode 00000100
+        // Início endereço: 9
+        strcpy(opcode, "00000100");
+        *endereco = memLocation(instruction, 9);
+    }
+    else if (startsWith(instruction,"STOR-M("))
+    {
+        // Início endereço: 7
+        if (endsWith(instruction,"8:19)"))
+        {
+            // Opcode 00010010
+            strcpy(opcode, "00010010");
+            *endereco = memLocation(instruction, 7);
+        }
+        else if (endsWith(instruction, "28:39)"))
+        {
+            // Opcode 00010011
+            strcpy(opcode, "00010011");
+            *endereco = memLocation(instruction, 7);
+        }
+        else
+        {
+            // Opcode 00100001
+            strcpy(opcode, "00100001");
+            *endereco = memLocation(instruction, 7);
+        }
+    }
+    else if (startsWith(instruction,"JUMP-M("))
+    {
+        // Início endereço: 7
+        if (endsWith(instruction,"0:19)"))
+        {
+            // Opcode 00001101
+            strcpy(opcode, "00001101");
+            *endereco = memLocation(instruction, 7);
+        }
+        else if (endsWith(instruction, "20:39)"))
+        {
+            // Opcode 00001110
+            strcpy(opcode, "00001110");
+            *endereco = memLocation(instruction, 7);
+        }
+    }
+    else if (startsWith(instruction,"JUMP+-M("))
+    {
+        // Início endereço: 8
+        if (endsWith(instruction,"0:19)"))
+        {
+            // Opcode 00001111
+            strcpy(opcode, "00001111");
+            *endereco = memLocation(instruction, 8);
+        }
+        else if (endsWith(instruction, "20:39)"))
+        {
+            // Opcode 00010000
+            strcpy(opcode, "00010000");
+            *endereco = memLocation(instruction, 8);
+        }
+    }
+    else if (startsWith(instruction,"ADD-M("))
+    {
+        // Opcode 00000101
+        // Início endereço: 6
+        strcpy(opcode, "00000101");
+        *endereco = memLocation(instruction, 6);
+    }
+    else if (startsWith(instruction,"ADD-|M("))
+    {
+        // Opcode 00000111
+        // Início endereço: 7
+        strcpy(opcode, "00000111");
+        *endereco = memLocation(instruction, 7);
+    }
+    else if (startsWith(instruction,"SUB-M("))
+    {
+        // Opcode 00000110
+        // Início endereço: 6
+        strcpy(opcode, "00000110");
+        *endereco = memLocation(instruction, 6);
+    }
+    else if (startsWith(instruction,"SUB-|M("))
+    {
+        // Opcode 00001000
+        // Início endereço: 7
+        strcpy(opcode, "00001000");
+        *endereco = memLocation(instruction, 7);
+    }
+    else if (startsWith(instruction,"MUL-M("))
+    {
+        // Opcode 00001011
+        // Início endereço: 6 
+        strcpy(opcode, "00001011");
+        *endereco = memLocation(instruction, 6);
+    }
+    else if (startsWith(instruction,"DIV-M("))
+    {
+        // Opcode 00001100
+        // Início endereço: 6
+        strcpy(opcode, "00001100");
+        *endereco = memLocation(instruction, 6);
+    }
+    else if (startsWith(instruction,"LSH"))
+    {
+        // Opcode 00010100
+        // Início endereço: Não há
+        strcpy(opcode, "00010100");
+        *endereco = 0;
+    }
+    else if (startsWith(instruction,"RSH"))
+    {
+        // Opcode 00010101
+        // Início endereço: Não há
+        strcpy(opcode, "00010101");
+        *endereco = 0;
+    }
+    else if (startsWith(instruction,"EXIT"))
+    {
+        // Opcode 11111111
+        // Início endereço: Não há
+        strcpy(opcode, "11111111");
+        *endereco = 0;
+    }
+    else
+    {
+        strcpy(opcode, "00000000");
+        *endereco = -1;
+    }
+}
+
 int main ()
 {
     char instruction[100], opcode[6], operand[6];
@@ -187,127 +366,143 @@ int main ()
         linha++;
         printf("\n");
 
+        char opcode[8];
+        int endereco;
+
+        if (instruction[strlen(instruction) - 1] == '\n')
+        {
+            instruction[strlen(instruction) - 1] = '\0';
+        }
+        if (instruction[strlen(instruction) - 1] == '\r')
+        {
+            instruction[strlen(instruction) - 1] = '\0';
+        }
+
+        converteInstrucao(instruction, opcode, &endereco);
+
+        printf("\nOpcode: %s endereco: %d instrucao: \"%s\"", opcode, endereco, instruction);
+        
         //+/+/+/+/+/+/ CASOS LOAD /+/+/+/+/+/+/+/+/+/+/+/+/
-        if (startsWith(instruction,"LOAD-MQ,M("))
-        {
-            // printf("> linha %d era um LOAD MQ,M(%d)", linha, memLocation(instruction, 10));
-            // Opcode: 00001001
-            // Inicio endereço: posicao 10
-        }
-        else if (startsWith(instruction,"LOAD-MQ"))
-        {
-            // Opcode: 00001010
-            // Não há endereço a ser lido
-        }
-        else if (startsWith(instruction,"LOAD-M("))
-        {
-            // Opcode 00100001
-            // Início endereço: 7
-        }
-        else if (startsWith(instruction,"LOAD--M("))
-        {
-            // Opcode 00000010
-            // Início endereço: 8
-        }
-        else if (startsWith(instruction,"LOAD-|M("))
-        {
-            // Opcode 00000011
-            // Início endereço: 8
-        }
-        else if (startsWith(instruction,"LOAD--|M("))
-        {
-            // Opcode 00000100
-            // Início endereço: 9
-        }
-        else if (startsWith(instruction,"STOR-M("))
-        {
-            // Início endereço: 7
-            if (endsWith(instruction,"8:19)"))
-            {
-                // Opcode 00010010
-            }
-            else if (endsWith(instruction, "28:39)"))
-            {
-                // Opcode 00010011
-            }
-            else
-            {
-                // Opcode 00100001
-            }
-        }
-        else if (startsWith(instruction,"JUMP-M("))
-        {
-            // Início endereço: 7
-            if (endsWith(instruction,"0:19)"))
-            {
-                // Opcode 00001101
-            }
-            else if (endsWith(instruction, "20:39)"))
-            {
-                // Opcode 00001110
-            }
-        }
-        else if (startsWith(instruction,"JUMP+-M("))
-        {
-            // Início endereço: 8
-            if (endsWith(instruction,"0:19)"))
-            {
-                // Opcode 00001111
-            }
-            else if (endsWith(instruction, "20:39)"))
-            {
-                // Opcode 00010000
-            }
-        }
-        else if (startsWith(instruction,"ADD-M("))
-        {
-            // Opcode 00000101
-            // Início endereço: 6
-        }
-        else if (startsWith(instruction,"ADD-|M("))
-        {
-            // Opcode 00000111
-            // Início endereço: 7
-        }
-        else if (startsWith(instruction,"SUB-M("))
-        {
-            // Opcode 00000110
-            // Início endereço: 6
-        }
-        else if (startsWith(instruction,"SUB-|M("))
-        {
-            // Opcode 00001000
-            // Início endereço: 7
-        }
-        else if (startsWith(instruction,"MUL-M("))
-        {
-            // Opcode 00001011
-            // Início endereço: 6 
-        }
-        else if (startsWith(instruction,"DIV-M("))
-        {
-            // Opcode 00001100
-            // Início endereço: 6
-        }
-        else if (startsWith(instruction,"LSH"))
-        {
-            // Opcode 00010100
-            // Início endereço: Não há
-        }
-        else if (startsWith(instruction,"RSH"))
-        {
-            // Opcode 00010101
-            // Início endereço: Não há
-        }
-        else if (startsWith(instruction,"EXIT"))
-        {
-            // Opcode 11111111
-            // Início endereço: Não há
-        }
-        else
-        {
-            printf("\n> Erro: Comando '%s' nao reconhecido, linha %d", opcode, linha);
-        }
+        // if (startsWith(instruction,"LOAD-MQ,M("))
+        // {
+        //     // printf("> linha %d era um LOAD MQ,M(%d)", linha, memLocation(instruction, 10));
+        //     // Opcode: 00001001
+        //     // Inicio endereço: posicao 10
+        // }
+        // else if (startsWith(instruction,"LOAD-MQ"))
+        // {
+        //     // Opcode: 00001010
+        //     // Não há endereço a ser lido
+        // }
+        // else if (startsWith(instruction,"LOAD-M("))
+        // {
+        //     // Opcode 00000001
+        //     // Início endereço: 7
+        // }
+        // else if (startsWith(instruction,"LOAD--M("))
+        // {
+        //     // Opcode 00000010
+        //     // Início endereço: 8
+        // }
+        // else if (startsWith(instruction,"LOAD-|M("))
+        // {
+        //     // Opcode 00000011
+        //     // Início endereço: 8
+        // }
+        // else if (startsWith(instruction,"LOAD--|M("))
+        // {
+        //     // Opcode 00000100
+        //     // Início endereço: 9
+        // }
+        // else if (startsWith(instruction,"STOR-M("))
+        // {
+        //     // Início endereço: 7
+        //     if (endsWith(instruction,"8:19)"))
+        //     {
+        //         // Opcode 00010010
+        //     }
+        //     else if (endsWith(instruction, "28:39)"))
+        //     {
+        //         // Opcode 00010011
+        //     }
+        //     else
+        //     {
+        //         // Opcode 00100001
+        //     }
+        // }
+        // else if (startsWith(instruction,"JUMP-M("))
+        // {
+        //     // Início endereço: 7
+        //     if (endsWith(instruction,"0:19)"))
+        //     {
+        //         // Opcode 00001101
+        //     }
+        //     else if (endsWith(instruction, "20:39)"))
+        //     {
+        //         // Opcode 00001110
+        //     }
+        // }
+        // else if (startsWith(instruction,"JUMP+-M("))
+        // {
+        //     // Início endereço: 8
+        //     if (endsWith(instruction,"0:19)"))
+        //     {
+        //         // Opcode 00001111
+        //     }
+        //     else if (endsWith(instruction, "20:39)"))
+        //     {
+        //         // Opcode 00010000
+        //     }
+        // }
+        // else if (startsWith(instruction,"ADD-M("))
+        // {
+        //     // Opcode 00000101
+        //     // Início endereço: 6
+        // }
+        // else if (startsWith(instruction,"ADD-|M("))
+        // {
+        //     // Opcode 00000111
+        //     // Início endereço: 7
+        // }
+        // else if (startsWith(instruction,"SUB-M("))
+        // {
+        //     // Opcode 00000110
+        //     // Início endereço: 6
+        // }
+        // else if (startsWith(instruction,"SUB-|M("))
+        // {
+        //     // Opcode 00001000
+        //     // Início endereço: 7
+        // }
+        // else if (startsWith(instruction,"MUL-M("))
+        // {
+        //     // Opcode 00001011
+        //     // Início endereço: 6 
+        // }
+        // else if (startsWith(instruction,"DIV-M("))
+        // {
+        //     // Opcode 00001100
+        //     // Início endereço: 6
+        // }
+        // else if (startsWith(instruction,"LSH"))
+        // {
+        //     // Opcode 00010100
+        //     // Início endereço: Não há
+        // }
+        // else if (startsWith(instruction,"RSH"))
+        // {
+        //     // Opcode 00010101
+        //     // Início endereço: Não há
+        // }
+        // else if (startsWith(instruction,"EXIT"))
+        // {
+        //     // Opcode 11111111
+        //     // Início endereço: Não há
+        // }
+        // else
+        // {
+        //     printf("\n> Erro: Comando '%s' nao reconhecido, linha %d", opcode, linha);
+        // }
         // if (strcmp(instruction, "LOAD") == 0)  printf("000000001\n");
         // else if (strcmp(instruction, "ADD") == 0) printf("000000010\n");
     }
