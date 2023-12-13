@@ -3,7 +3,11 @@
 #include <string.h>
 #include <math.h>
 
+#define TAM_MEM 4096
+
 typedef enum {False, True} booleano;
+
+int memory[TAM_MEM] = {0};
 
 int memLocation (char *instruction, int index)
 {
@@ -47,6 +51,26 @@ int binToDec (char *bin)
         i++;
     }
     return num;
+}
+
+void storeInMemory(int endereco, int dado) 
+{
+    if(endereco <= TAM_MEM)
+    {
+        memory[endereco] = dado;
+    }
+}
+
+void printMemoryDec() {
+    FILE *outFile;
+    outFile = fopen("output.txt", "w");
+
+    int i=0;
+    while (memory[i] != 0) {
+        fwrite(memory[i], 1, sizeof(int), outFile);
+    }
+
+    fclose(outFile);
 }
 
 /*
@@ -351,6 +375,10 @@ int main ()
 
         converteInstrucao(instruction, opcode, &endereco);
 
+        int opcodeDec = binToDec(opcode);
+        
+        storeInMemory(endereco, opcode);
+
         printf("\nOpcode: %s endereco: %d instrucao: \"%s\"", opcode, endereco, instruction);
         
         //+/+/+/+/+/+/ CASOS LOAD /+/+/+/+/+/+/+/+/+/+/+/+/
@@ -477,6 +505,8 @@ int main ()
         // if (strcmp(instruction, "LOAD") == 0)  printf("000000001\n");
         // else if (strcmp(instruction, "ADD") == 0) printf("000000010\n");
     }
+
+    printMemoryDec();
 
     fclose(f);
     return 0;
