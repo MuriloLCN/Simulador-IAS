@@ -185,86 +185,124 @@ int main ()
     while(fgets(instruction, 100, f) != NULL)
     {
         linha++;
-        // GetOpCode(instruction, opcode);
-        // // printf("Opcode: %s\n", opcode);
-
-        // GetOperand(instruction, operand);
-        // printf("Operand: %s\n", operand);
-
-        // printf("\n %d: %s", linha, instruction);
         printf("\n");
 
         //+/+/+/+/+/+/ CASOS LOAD /+/+/+/+/+/+/+/+/+/+/+/+/
-        if (startsWith(instruction,"LOAD MQ,M("))
+        if (startsWith(instruction,"LOAD-MQ,M("))
         {
-            // Todos os casos de load entram aqui...
-            printf("> linha %d era um LOAD MQ,M(%d)", linha, memLocation(instruction, 10));
+            // printf("> linha %d era um LOAD MQ,M(%d)", linha, memLocation(instruction, 10));
+            // Opcode: 00001001
+            // Inicio endereço: posicao 10
         }
-        else if (startsWith(instruction,"LOAD MQ"))
+        else if (startsWith(instruction,"LOAD-MQ"))
         {
-            // Todos os casos de stor entram aqui...
-            printf("> linha %d era um LOAD MQ", linha);
+            // Opcode: 00001010
+            // Não há endereço a ser lido
         }
-        else if (startsWith(instruction,"LOAD M("))
+        else if (startsWith(instruction,"LOAD-M("))
         {
-            
-            // Todos os casos de stor entram aqui...
-            printf("> linha %d era um LOAD M(%d)", linha, memLocation(instruction, 7));
+            // Opcode 00100001
+            // Início endereço: 7
         }
-        else if (startsWith(instruction,"LOAD -M("))
+        else if (startsWith(instruction,"LOAD--M("))
         {
-            // Todos os casos de stor entram aqui...
-            printf("> linha %d era um LOAD -M(%d)", linha, memLocation(instruction, 8));
+            // Opcode 00000010
+            // Início endereço: 8
         }
-        else if (startsWith(instruction,"LOAD |M("))
+        else if (startsWith(instruction,"LOAD-|M("))
         {
-            // Todos os casos de stor entram aqui...
-            printf("> linha %d era um LOAD |M(%d)", linha, memLocation(instruction, 8));
+            // Opcode 00000011
+            // Início endereço: 8
         }
-        else if (startsWith(instruction,"LOAD -|M("))
+        else if (startsWith(instruction,"LOAD--|M("))
         {
-            // Todos os casos de stor entram aqui...
-            printf("> linha %d era um LOAD -|M(%d)", linha, memLocation(instruction, 9));
+            // Opcode 00000100
+            // Início endereço: 9
         }
-
-        //+/+/+/+/+/+/ CASOS STOR /+/+/+/+/+/+/+/+/+/+/+/+/
-
-        else if (startsWith(instruction,"STOR"))
+        else if (startsWith(instruction,"STOR-M("))
         {
-            // Todos os casos de stor entram aqui...
-            printf("> linha %d era um STOR", linha);
+            // Início endereço: 7
+            if (endsWith(instruction,"8:19)"))
+            {
+                // Opcode 00010010
+            }
+            else if (endsWith(instruction, "28:39)"))
+            {
+                // Opcode 00010011
+            }
+            else
+            {
+                // Opcode 00100001
+            }
         }
-        else if (startsWith(instruction,"JUMP"))
+        else if (startsWith(instruction,"JUMP-M("))
         {
-            printf("> linha %d era um JUMP", linha);
+            // Início endereço: 7
+            if (endsWith(instruction,"0:19)"))
+            {
+                // Opcode 00001101
+            }
+            else if (endsWith(instruction, "20:39)"))
+            {
+                // Opcode 00001110
+            }
         }
-        else if (startsWith(instruction,"ADD"))
+        else if (startsWith(instruction,"JUMP+-M("))
         {
-            printf("> linha %d era um ADD", linha);
+            // Início endereço: 8
+            if (endsWith(instruction,"0:19)"))
+            {
+                // Opcode 00001111
+            }
+            else if (endsWith(instruction, "20:39)"))
+            {
+                // Opcode 00010000
+            }
         }
-        else if (startsWith(instruction,"SUB"))
+        else if (startsWith(instruction,"ADD-M("))
         {
-            printf("> linha %d era um SUB", linha);
+            // Opcode 00000101
+            // Início endereço: 6
         }
-        else if (startsWith(instruction,"MUL"))
+        else if (startsWith(instruction,"ADD-|M("))
         {
-            printf("> linha %d era um MUL", linha);
+            // Opcode 00000111
+            // Início endereço: 7
         }
-        else if (startsWith(instruction,"DIV"))
+        else if (startsWith(instruction,"SUB-M("))
         {
-            printf("> linha %d era um DIV", linha);
+            // Opcode 00000110
+            // Início endereço: 6
+        }
+        else if (startsWith(instruction,"SUB-|M("))
+        {
+            // Opcode 00001000
+            // Início endereço: 7
+        }
+        else if (startsWith(instruction,"MUL-M("))
+        {
+            // Opcode 00001011
+            // Início endereço: 6 
+        }
+        else if (startsWith(instruction,"DIV-M("))
+        {
+            // Opcode 00001100
+            // Início endereço: 6
         }
         else if (startsWith(instruction,"LSH"))
         {
-            printf("> linha %d era um LSH", linha);
+            // Opcode 00010100
+            // Início endereço: Não há
         }
         else if (startsWith(instruction,"RSH"))
         {
-            printf("> linha %d era um RSH", linha);
+            // Opcode 00010101
+            // Início endereço: Não há
         }
         else if (startsWith(instruction,"EXIT"))
         {
-            printf("> linha %d era um EXIT", linha);
+            // Opcode 11111111
+            // Início endereço: Não há
         }
         else
         {
