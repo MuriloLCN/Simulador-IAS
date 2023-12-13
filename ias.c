@@ -1,52 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 typedef enum {False, True} booleano;
-
-void OffSpace (char line[])
-{
-    for (int i = 0; i < strlen(line); i++)
-    {
-        if (line[i] == ' ')
-        {
-            for (int j = i+1; j < strlen(line); j++)
-            {
-                line[j-1] = line[j];
-            }
-            line[strlen(line)-1] = '\0';
-        }
-    }
-}
-
-int GetOpCode (char instruction[], char opcode[])
-{
-    int i = 0;
-    while (instruction[i] != 32)
-    {
-        opcode[i] = instruction[i];
-        i++;
-    }
-    opcode[i] = '\0';
-    return 0;
-}
-
-int GetOperand (char instruction[], char operand[])
-{
-    int i = 0;
-    while (instruction[i] != 32) {i++;} // encontra o primeiro espaço
-    while (instruction[i] == 32) {i++;} // passa por todos os espaços
-    int j = 0;
-    while (instruction[i] != '\n')
-    {
-        operand[j] = instruction[i];
-        i++;
-        j++;
-    }
-    operand[j] = '\0';    
-
-    return 0;
-}
 
 int memLocation (char *instruction, int index)
 {
@@ -78,34 +35,48 @@ int memLocation (char *instruction, int index)
     else return -1;
 }
 
+int binToDec (char *bin)
+{
+    int i=0, num=0;
+    for (int k = strlen(bin)-1; k >= 0; k--)
+    {
+        if (bin[k] == '1')
+        {
+            num += (int)pow(2, i);
+        }
+        i++;
+    }
+    return num;
+}
+
 /*
 Instruções - Opcode
-LOAD MQ - 00001010
-LOAD MQ,M(X) - 00001001
-STOR M(X) - 00100001
-LOAD M(X) - 00000001
-LOAD -M(X) - 00000010
-LOAD |M(X)| - 00000011
-LOAD -|M(X)| - 00000100
+LOAD MQ - 00001010 (10)
+LOAD MQ,M(X) - 00001001 (9)
+STOR M(X) - 00100001 (33)
+LOAD M(X) - 00000001 (1)
+LOAD -M(X) - 00000010 (2)
+LOAD |M(X)| - 00000011 (3)
+LOAD -|M(X)| - 00000100 (4)
 
-JUMP M(X,0:19) - 00001101
-JUMP M(X,20:39) - 00001110
+JUMP M(X,0:19) - 00001101 (13)
+JUMP M(X,20:39) - 00001110 (14)
 
-JUMP +M(X,0:19) - 00001111
-JUMP +M(X,20:39) - 00010000
+JUMP +M(X,0:19) - 00001111 (15)
+JUMP +M(X,20:39) - 00010000 (16)
 
-ADD M(X) - 00000101
-ADD |M(X)| - 00000111
-SUB M(X) - 00000110
-SUB |M(X)| - 00001000
-MUL M(X) - 00001011
-DIV M(X) - 00001100
-LSH - 00010100
-RSH - 00010101
-STOR M(X,8:19) - 00010010
-STOR M(X,28:39) - 00010011
+ADD M(X) - 00000101 (5)
+ADD |M(X)| - 00000111 (7)
+SUB M(X) - 00000110 (6)
+SUB |M(X)| - 00001000 (8)
+MUL M(X) - 00001011 (11)
+DIV M(X) - 00001100 (12)
+LSH - 00010100 (20)
+RSH - 00010101 (21)
+STOR M(X,8:19) - 00010010 (18)
+STOR M(X,28:39) - 00010011 (19)
 
-EXIT - 11111111
+EXIT - 11111111 (255)
 */
 
 booleano startsWith(char* palavra, char* prefixo)
@@ -191,42 +162,42 @@ void converteInstrucao(char* instruction, char* opcode, int* endereco)
     */
     if (startsWith(instruction,"LOAD-MQ,M("))
     {
-        // Opcode: 00001001
+        // Opcode: 00001001 (9)
         // Inicio endereço: posicao 10
         strcpy(opcode, "00001001");
         *endereco = memLocation(instruction, 10);
     }
     else if (startsWith(instruction,"LOAD-MQ"))
     {
-        // Opcode: 00001010
+        // Opcode: 00001010 (10)
         // Não há endereço a ser lido
         strcpy(opcode, "00001010");
         *endereco = 0;
     }
     else if (startsWith(instruction,"LOAD-M("))
     {
-        // Opcode 00000001
+        // Opcode 00000001 (1)
         // Início endereço: 7
         strcpy(opcode, "00000001");
         *endereco = memLocation(instruction, 7);
     }
     else if (startsWith(instruction,"LOAD--M("))
     {
-        // Opcode 00000010
+        // Opcode 00000010 (2)
         // Início endereço: 8
         strcpy(opcode, "000010010");
         *endereco = memLocation(instruction, 8);
     }
     else if (startsWith(instruction,"LOAD-|M("))
     {
-        // Opcode 00000011
+        // Opcode 00000011 (3)
         // Início endereço: 8
         strcpy(opcode, "00000011");
         *endereco = memLocation(instruction, 8);
     }
     else if (startsWith(instruction,"LOAD--|M("))
     {
-        // Opcode 00000100
+        // Opcode 00000100 (4)
         // Início endereço: 9
         strcpy(opcode, "00000100");
         *endereco = memLocation(instruction, 9);
@@ -236,19 +207,19 @@ void converteInstrucao(char* instruction, char* opcode, int* endereco)
         // Início endereço: 7
         if (endsWith(instruction,"8:19)"))
         {
-            // Opcode 00010010
+            // Opcode 00010010 (18)
             strcpy(opcode, "00010010");
             *endereco = memLocation(instruction, 7);
         }
         else if (endsWith(instruction, "28:39)"))
         {
-            // Opcode 00010011
+            // Opcode 00010011 (19)
             strcpy(opcode, "00010011");
             *endereco = memLocation(instruction, 7);
         }
         else
         {
-            // Opcode 00100001
+            // Opcode 00100001 (33)
             strcpy(opcode, "00100001");
             *endereco = memLocation(instruction, 7);
         }
@@ -258,13 +229,13 @@ void converteInstrucao(char* instruction, char* opcode, int* endereco)
         // Início endereço: 7
         if (endsWith(instruction,"0:19)"))
         {
-            // Opcode 00001101
+            // Opcode 00001101 (13)
             strcpy(opcode, "00001101");
             *endereco = memLocation(instruction, 7);
         }
         else if (endsWith(instruction, "20:39)"))
         {
-            // Opcode 00001110
+            // Opcode 00001110 (14)
             strcpy(opcode, "00001110");
             *endereco = memLocation(instruction, 7);
         }
@@ -274,76 +245,76 @@ void converteInstrucao(char* instruction, char* opcode, int* endereco)
         // Início endereço: 8
         if (endsWith(instruction,"0:19)"))
         {
-            // Opcode 00001111
+            // Opcode 00001111 (15)
             strcpy(opcode, "00001111");
             *endereco = memLocation(instruction, 8);
         }
         else if (endsWith(instruction, "20:39)"))
         {
-            // Opcode 00010000
+            // Opcode 00010000 (16)
             strcpy(opcode, "00010000");
             *endereco = memLocation(instruction, 8);
         }
     }
     else if (startsWith(instruction,"ADD-M("))
     {
-        // Opcode 00000101
+        // Opcode 00000101 (5)
         // Início endereço: 6
         strcpy(opcode, "00000101");
         *endereco = memLocation(instruction, 6);
     }
     else if (startsWith(instruction,"ADD-|M("))
     {
-        // Opcode 00000111
+        // Opcode 00000111 (7)
         // Início endereço: 7
         strcpy(opcode, "00000111");
         *endereco = memLocation(instruction, 7);
     }
     else if (startsWith(instruction,"SUB-M("))
     {
-        // Opcode 00000110
+        // Opcode 00000110 (6)
         // Início endereço: 6
         strcpy(opcode, "00000110");
         *endereco = memLocation(instruction, 6);
     }
     else if (startsWith(instruction,"SUB-|M("))
     {
-        // Opcode 00001000
+        // Opcode 00001000 (8)
         // Início endereço: 7
         strcpy(opcode, "00001000");
         *endereco = memLocation(instruction, 7);
     }
     else if (startsWith(instruction,"MUL-M("))
     {
-        // Opcode 00001011
+        // Opcode 00001011 (11)
         // Início endereço: 6 
         strcpy(opcode, "00001011");
         *endereco = memLocation(instruction, 6);
     }
     else if (startsWith(instruction,"DIV-M("))
     {
-        // Opcode 00001100
+        // Opcode 00001100 (12)
         // Início endereço: 6
         strcpy(opcode, "00001100");
         *endereco = memLocation(instruction, 6);
     }
     else if (startsWith(instruction,"LSH"))
     {
-        // Opcode 00010100
+        // Opcode 00010100 (20)
         // Início endereço: Não há
         strcpy(opcode, "00010100");
         *endereco = 0;
     }
     else if (startsWith(instruction,"RSH"))
     {
-        // Opcode 00010101
+        // Opcode 00010101 (21)
         // Início endereço: Não há
         strcpy(opcode, "00010101");
         *endereco = 0;
     }
     else if (startsWith(instruction,"EXIT"))
     {
-        // Opcode 11111111
+        // Opcode 11111111 (255)
         // Início endereço: Não há
         strcpy(opcode, "11111111");
         *endereco = 0;
