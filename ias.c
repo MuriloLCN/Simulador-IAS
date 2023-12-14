@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <inttypes.h>
 
 #define TAM_MEM 4096
 
@@ -51,6 +52,20 @@ int binToDec (char *bin)
         i++;
     }
     return num;
+}
+
+int64_t joinElements (int opcode1, int operand1, int opcode2, int operand2)
+{
+    int64_t final = 0;
+    final = final | opcode1;
+    final = final << 12;
+    final = final | operand1;
+    final = final << 8;
+    final = final | opcode2;
+    final = final << 12;
+    final = final | operand2;
+
+    return final;   
 }
 
 void storeInMemory(int endereco, int dado) 
@@ -353,9 +368,10 @@ void converteInstrucao(char* instruction, char* opcode, int* endereco)
 int main ()
 {
     char instruction[100], opcode[6], operand[6];
-    FILE *f;
+    FILE *f, *out;
     f = fopen("instructions.txt", "r");
-    int linha = 0;
+    out = fopen("out.txt", "w");
+    int linha = 0, opcode_memo, adress_memo, control=0;
     while(fgets(instruction, 100, f) != NULL)
     {
         linha++;
@@ -375,12 +391,24 @@ int main ()
 
         converteInstrucao(instruction, opcode, &endereco);
 
-        int opcodeDec = binToDec(opcode);
+        int opcode_dec = binToDec(opcode);
         
-        storeInMemory(endereco, opcode);
+        //storeInMemory(endereco, opcode);
 
         printf("\nOpcode: %s endereco: %d instrucao: \"%s\"", opcode, endereco, instruction);
         
+        if (control == 0)
+        {
+            opcode_memo = opcode_dec;
+            adress_memo = endereco;
+            control = 1;
+        }
+        else if (control == 1)
+        {
+            int64_t word = joinElements(opcode_memo, adress_memo, opcode_dec, endereco);
+            fprintf(out, "%"PRId64"\n", word);
+            control = 0;
+        }
         //+/+/+/+/+/+/ CASOS LOAD /+/+/+/+/+/+/+/+/+/+/+/+/
         // if (startsWith(instruction,"LOAD-MQ,M("))
         // {
@@ -506,8 +534,10 @@ int main ()
         // else if (strcmp(instruction, "ADD") == 0) printf("000000010\n");
     }
 
-    printMemoryDec();
+    //printMemoryDec();
 
+
+    fclose(out);
     fclose(f);
     return 0;
 }
