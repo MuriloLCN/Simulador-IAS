@@ -4,44 +4,74 @@
 #include <math.h>
 #include <inttypes.h>
 
-#define TAM_MEM 4096
+#define TAMANHO_MEMORIA 4096
 
 typedef enum {False, True} booleano;
 
-int memory[TAM_MEM] = {0};
+int memoria[TAMANHO_MEMORIA] = {0};
 
-int memLocation (char *instruction, int index)
+int pegaParametroInstrucao(char *instrucao, int index)
 {
+    /*
+        Obtém o endereço de memória inscrito em uma instrução
+        Entradas:
+        char* instrucao: A string contendo a instrução
+        int index: O índice onde o valor tem início
+
+        Retorno:
+        O valor lido da instrução
+
+        Exemplo:
+        instrução = "LOAD M(57)"
+        index = 7 (57 começa na sétima posição)
+        retorno: 57
+    */
+
+    // String que ira conter o valor lido, ex: "57"
     char num[5];
+
     int i = 0, int_num;
-    while (instruction[index] == '0' ||
-           instruction[index] == '1' ||
-           instruction[index] == '2' ||
-           instruction[index] == '3' ||
-           instruction[index] == '4' ||
-           instruction[index] == '5' ||
-           instruction[index] == '6' ||
-           instruction[index] == '7' ||
-           instruction[index] == '8' ||
-           instruction[index] == '9')
+
+    while (instrucao[index] == '0' ||
+           instrucao[index] == '1' ||
+           instrucao[index] == '2' ||
+           instrucao[index] == '3' ||
+           instrucao[index] == '4' ||
+           instrucao[index] == '5' ||
+           instrucao[index] == '6' ||
+           instrucao[index] == '7' ||
+           instrucao[index] == '8' ||
+           instrucao[index] == '9')
     {
-        if (i > 3) return -1; // erro, endereço de memória de tamanho maior que 4 digitos
+        if (i > 3) return -1; // Erro, endereço de memória de tamanho maior que 4 digitos
         else
         {
-            num[i] = instruction[index];
-            i++; 
+            num[i] = instrucao[index];
+            i++;
             index++;
         }
     }
+
     num[i] = '\0';
 
     int_num = atoi(num);
-    if (int_num <= 4095) return int_num; // verifica se o endereço de memória tá dentro dos valores permitidos
-    else return -1;
+
+    if (int_num <= 4095) return int_num; // verifica se o endereço de memória está dentro dos valores permitidos
+    return -1;
 }
 
-int binToDec (char *bin)
+int stringParaInt(char *bin)
 {
+    /*
+        Converte uma string contendo um valor binário para um inteiro
+        Entradas:
+            char* bin: A string a ser convertida
+        Retorno:
+            A string convertida para um inteiro
+
+        Exemplo:
+        "1010" retorna 10
+    */
     int i=0, num=0;
     for (int k = strlen(bin)-1; k >= 0; k--)
     {
@@ -54,8 +84,17 @@ int binToDec (char *bin)
     return num;
 }
 
-int64_t joinElements (int opcode1, int operand1, int opcode2, int operand2)
+int64_t montaLinhaDeInstrucao (int opcode1, int operand1, int opcode2, int operand2)
 {
+    /*
+        Monta uma linha de memória de instrução IAS, sendo composta de duas instruções individuais justapostas
+        Entradas:
+        int opcode1: O inteiro representando o opcode da instrução à esquerda da linha
+        int operand1: O inteiro representando o argumento da instrução à esquerda da linha
+        int opcode2: O inteiro representando o opcode da instrução à direita da linha
+        int operand2: O inteiro representando o argumento da instrução à direita da linha
+    */
+
     int64_t final = 0;
     final = final | opcode1;
     final = final << 12;
@@ -65,24 +104,34 @@ int64_t joinElements (int opcode1, int operand1, int opcode2, int operand2)
     final = final << 12;
     final = final | operand2;
 
-    return final;   
+    return final;
 }
 
-void storeInMemory(int endereco, int dado) 
+void armazenaNaMemoria(int endereco, int dado)
 {
-    if(endereco <= TAM_MEM)
+    /*
+        Guarda um valor na memoria - usado como encapsulamento
+        Entradas:
+            int endereco: O endereço de memória para se guardar o dado
+            int dado: O dado a ser armazenado
+    */
+    if(endereco <= TAMANHO_MEMORIA)
     {
-        memory[endereco] = dado;
+        memoria[endereco] = dado;
     }
 }
 
-void printMemoryDec() {
+void dumpDaMemoria() {
+    /*
+        Realiza um dump de todo o conteúdo da memória em um arquivo output.txt
+    */
+
     FILE *outFile;
     outFile = fopen("output.txt", "w");
 
     int i=0;
-    while (memory[i] != 0) {
-        fwrite(memory[i], 1, sizeof(int), outFile);
+    while (memoria[i] != 0) {
+        fwrite(memoria[i], 1, sizeof(int), outFile);
     }
 
     fclose(outFile);
@@ -118,7 +167,7 @@ STOR M(X,28:39) - 00010011 (19)
 EXIT - 11111111 (255)
 */
 
-booleano startsWith(char* palavra, char* prefixo)
+booleano comecaCom(char* palavra, char* prefixo)
 {
     /*
         Verifica se uma palavra começa com algum prefixo específico
@@ -153,7 +202,7 @@ booleano startsWith(char* palavra, char* prefixo)
     return True;
 }
 
-booleano endsWith(char* palavra, char* sufixo)
+booleano terminaCom(char* palavra, char* sufixo)
 {
     /*
         Verifica se uma palavra termina com algum sufixo específico
@@ -186,172 +235,172 @@ booleano endsWith(char* palavra, char* sufixo)
     return True;
 }
 
-void converteInstrucao(char* instruction, char* opcode, int* endereco)
+void converteInstrucao(char* instrucao, char* opcode, int* endereco)
 {
     /*
         Converte uma instrução em seu respectivo OPCODE e endereço
         Parâmetros:
-        char* instruction: A instrução a ser convertida
+        char* instrucao: A instrução a ser convertida
         char* opcode: Uma string para receber o opcode convertido
         int* endereco: Um inteiro para receber o endereço convertido
         Exemplo:
-        instruction = LOAD-M(57) -> opcode = "00000001" & endereco = 57
+        instrucao = LOAD-M(57) -> opcode = "00000001" & endereco = 57
 
         Em caso de erro (instrução não reconhecida), retorna "00000000" para o opcode e -1 para o endereço
     */
-    if (startsWith(instruction,"LOAD-MQ,M("))
+    if (comecaCom(instrucao,"LOAD-MQ,M("))
     {
         // Opcode: 00001001 (9)
         // Inicio endereço: posicao 10
         strcpy(opcode, "00001001");
-        *endereco = memLocation(instruction, 10);
+        *endereco = pegaParametroInstrucao(instrucao, 10);
     }
-    else if (startsWith(instruction,"LOAD-MQ"))
+    else if (comecaCom(instrucao,"LOAD-MQ"))
     {
         // Opcode: 00001010 (10)
         // Não há endereço a ser lido
         strcpy(opcode, "00001010");
         *endereco = 0;
     }
-    else if (startsWith(instruction,"LOAD-M("))
+    else if (comecaCom(instrucao,"LOAD-M("))
     {
         // Opcode 00000001 (1)
         // Início endereço: 7
         strcpy(opcode, "00000001");
-        *endereco = memLocation(instruction, 7);
+        *endereco = pegaParametroInstrucao(instrucao, 7);
     }
-    else if (startsWith(instruction,"LOAD--M("))
+    else if (comecaCom(instrucao,"LOAD--M("))
     {
         // Opcode 00000010 (2)
         // Início endereço: 8
         strcpy(opcode, "000010010");
-        *endereco = memLocation(instruction, 8);
+        *endereco = pegaParametroInstrucao(instrucao, 8);
     }
-    else if (startsWith(instruction,"LOAD-|M("))
+    else if (comecaCom(instrucao,"LOAD-|M("))
     {
         // Opcode 00000011 (3)
         // Início endereço: 8
         strcpy(opcode, "00000011");
-        *endereco = memLocation(instruction, 8);
+        *endereco = pegaParametroInstrucao(instrucao, 8);
     }
-    else if (startsWith(instruction,"LOAD--|M("))
+    else if (comecaCom(instrucao,"LOAD--|M("))
     {
         // Opcode 00000100 (4)
         // Início endereço: 9
         strcpy(opcode, "00000100");
-        *endereco = memLocation(instruction, 9);
+        *endereco = pegaParametroInstrucao(instrucao, 9);
     }
-    else if (startsWith(instruction,"STOR-M("))
+    else if (comecaCom(instrucao,"STOR-M("))
     {
         // Início endereço: 7
-        if (endsWith(instruction,"8:19)"))
+        if (terminaCom(instrucao,"8:19)"))
         {
             // Opcode 00010010 (18)
             strcpy(opcode, "00010010");
-            *endereco = memLocation(instruction, 7);
+            *endereco = pegaParametroInstrucao(instrucao, 7);
         }
-        else if (endsWith(instruction, "28:39)"))
+        else if (terminaCom(instrucao, "28:39)"))
         {
             // Opcode 00010011 (19)
             strcpy(opcode, "00010011");
-            *endereco = memLocation(instruction, 7);
+            *endereco = pegaParametroInstrucao(instrucao, 7);
         }
         else
         {
             // Opcode 00100001 (33)
             strcpy(opcode, "00100001");
-            *endereco = memLocation(instruction, 7);
+            *endereco = pegaParametroInstrucao(instrucao, 7);
         }
     }
-    else if (startsWith(instruction,"JUMP-M("))
+    else if (comecaCom(instrucao,"JUMP-M("))
     {
         // Início endereço: 7
-        if (endsWith(instruction,"0:19)"))
+        if (terminaCom(instrucao,"0:19)"))
         {
             // Opcode 00001101 (13)
             strcpy(opcode, "00001101");
-            *endereco = memLocation(instruction, 7);
+            *endereco = pegaParametroInstrucao(instrucao, 7);
         }
-        else if (endsWith(instruction, "20:39)"))
+        else if (terminaCom(instrucao, "20:39)"))
         {
             // Opcode 00001110 (14)
             strcpy(opcode, "00001110");
-            *endereco = memLocation(instruction, 7);
+            *endereco = pegaParametroInstrucao(instrucao, 7);
         }
     }
-    else if (startsWith(instruction,"JUMP+-M("))
+    else if (comecaCom(instrucao,"JUMP+-M("))
     {
         // Início endereço: 8
-        if (endsWith(instruction,"0:19)"))
+        if (terminaCom(instrucao,"0:19)"))
         {
             // Opcode 00001111 (15)
             strcpy(opcode, "00001111");
-            *endereco = memLocation(instruction, 8);
+            *endereco = pegaParametroInstrucao(instrucao, 8);
         }
-        else if (endsWith(instruction, "20:39)"))
+        else if (terminaCom(instrucao, "20:39)"))
         {
             // Opcode 00010000 (16)
             strcpy(opcode, "00010000");
-            *endereco = memLocation(instruction, 8);
+            *endereco = pegaParametroInstrucao(instrucao, 8);
         }
     }
-    else if (startsWith(instruction,"ADD-M("))
+    else if (comecaCom(instrucao,"ADD-M("))
     {
         // Opcode 00000101 (5)
         // Início endereço: 6
         strcpy(opcode, "00000101");
-        *endereco = memLocation(instruction, 6);
+        *endereco = pegaParametroInstrucao(instrucao, 6);
     }
-    else if (startsWith(instruction,"ADD-|M("))
+    else if (comecaCom(instrucao,"ADD-|M("))
     {
         // Opcode 00000111 (7)
         // Início endereço: 7
         strcpy(opcode, "00000111");
-        *endereco = memLocation(instruction, 7);
+        *endereco = pegaParametroInstrucao(instrucao, 7);
     }
-    else if (startsWith(instruction,"SUB-M("))
+    else if (comecaCom(instrucao,"SUB-M("))
     {
         // Opcode 00000110 (6)
         // Início endereço: 6
         strcpy(opcode, "00000110");
-        *endereco = memLocation(instruction, 6);
+        *endereco = pegaParametroInstrucao(instrucao, 6);
     }
-    else if (startsWith(instruction,"SUB-|M("))
+    else if (comecaCom(instrucao,"SUB-|M("))
     {
         // Opcode 00001000 (8)
         // Início endereço: 7
         strcpy(opcode, "00001000");
-        *endereco = memLocation(instruction, 7);
+        *endereco = pegaParametroInstrucao(instrucao, 7);
     }
-    else if (startsWith(instruction,"MUL-M("))
+    else if (comecaCom(instrucao,"MUL-M("))
     {
         // Opcode 00001011 (11)
-        // Início endereço: 6 
+        // Início endereço: 6
         strcpy(opcode, "00001011");
-        *endereco = memLocation(instruction, 6);
+        *endereco = pegaParametroInstrucao(instrucao, 6);
     }
-    else if (startsWith(instruction,"DIV-M("))
+    else if (comecaCom(instrucao,"DIV-M("))
     {
         // Opcode 00001100 (12)
         // Início endereço: 6
         strcpy(opcode, "00001100");
-        *endereco = memLocation(instruction, 6);
+        *endereco = pegaParametroInstrucao(instrucao, 6);
     }
-    else if (startsWith(instruction,"LSH"))
+    else if (comecaCom(instrucao,"LSH"))
     {
         // Opcode 00010100 (20)
         // Início endereço: Não há
         strcpy(opcode, "00010100");
         *endereco = 0;
     }
-    else if (startsWith(instruction,"RSH"))
+    else if (comecaCom(instrucao,"RSH"))
     {
         // Opcode 00010101 (21)
         // Início endereço: Não há
         strcpy(opcode, "00010101");
         *endereco = 0;
     }
-    else if (startsWith(instruction,"EXIT"))
+    else if (comecaCom(instrucao,"EXIT"))
     {
         // Opcode 11111111 (255)
         // Início endereço: Não há
@@ -367,177 +416,72 @@ void converteInstrucao(char* instruction, char* opcode, int* endereco)
 
 int main ()
 {
-    char instruction[100], opcode[6], operand[6];
-    FILE *f, *out;
-    f = fopen("instructions.txt", "r");
-    out = fopen("out.txt", "w");
-    int linha = 0, opcode_memo, adress_memo, control=0;
-    while(fgets(instruction, 100, f) != NULL)
+    /*
+        Ponto de entrada principal do programa
+    */
+
+    char instrucao[100], opcode[6], operand[6];
+
+    FILE *arquivoEntrada, *arquivoSaida;
+    arquivoEntrada = fopen("instructions.txt", "r");
+    arquivoSaida = fopen("out.txt", "w");
+
+    int linhaAtualDeLeitura = 0;
+
+    // Usados para o controle durante a junção de duas instruções que devem ir na mesma linha
+    int opcodeEsquerdo, enderecoEsquerdo;
+    booleano controle = False;
+
+    // Lê linha a linha do arquivo de entrada
+    while(fgets(instrucao, 100, arquivoEntrada) != NULL)
     {
-        linha++;
-        printf("\n");
+        linhaAtualDeLeitura++;
 
-        char opcode[8];
+        char opcodeString[8];
         int endereco;
+        int64_t valor;  // Caso o endereço corresponda a um número
 
-        if (instruction[strlen(instruction) - 1] == '\n')
+
+        // Removendo possíveis \n ou \n\r no final de cada linha
+        if (instrucao[strlen(instrucao) - 1] == '\n')
         {
-            instruction[strlen(instruction) - 1] = '\0';
+            instrucao[strlen(instrucao) - 1] = '\0';
         }
-        if (instruction[strlen(instruction) - 1] == '\r')
+        if (instrucao[strlen(instrucao) - 1] == '\r')
         {
-            instruction[strlen(instruction) - 1] = '\0';
+            instrucao[strlen(instrucao) - 1] = '\0';
         }
 
-        converteInstrucao(instruction, opcode, &endereco);
+        // A fazer: leitura **integral** das 500 primeiras linhas aqui
 
-        int opcode_dec = binToDec(opcode);
-        
-        //storeInMemory(endereco, opcode);
+        converteInstrucao(instrucao, opcodeString, &endereco);
 
-        printf("\nOpcode: %s endereco: %d instrucao: \"%s\"", opcode, endereco, instruction);
-        
-        if (control == 0)
+        int opcodeInt = stringParaInt(opcodeString);
+
+        //armazenaNaMemoria(endereco, opcode);
+
+        printf("\nOpcode: %s endereco: %d instrucao: \"%s\"", opcodeString, endereco, instrucao);
+
+        if (!controle)
         {
-            opcode_memo = opcode_dec;
-            adress_memo = endereco;
-            control = 1;
+            // Caso a instrução lida tenha que ir na esquerda da seção de memória
+            opcodeEsquerdo = opcodeInt;
+            enderecoEsquerdo = endereco;
+            controle = True;
         }
-        else if (control == 1)
+        else
         {
-            int64_t word = joinElements(opcode_memo, adress_memo, opcode_dec, endereco);
-            fprintf(out, "%"PRId64"\n", word);
-            control = 0;
+            // Caso a instrução lida tenha que ir na direita da seção de memória, monta a linha e armazena
+            int64_t word = montaLinhaDeInstrucao(opcodeEsquerdo, enderecoEsquerdo, opcodeInt, endereco);
+            fprintf(arquivoSaida, "%"PRId64"\n", word);
+            controle = False;
         }
-        //+/+/+/+/+/+/ CASOS LOAD /+/+/+/+/+/+/+/+/+/+/+/+/
-        // if (startsWith(instruction,"LOAD-MQ,M("))
-        // {
-        //     // printf("> linha %d era um LOAD MQ,M(%d)", linha, memLocation(instruction, 10));
-        //     // Opcode: 00001001
-        //     // Inicio endereço: posicao 10
-        // }
-        // else if (startsWith(instruction,"LOAD-MQ"))
-        // {
-        //     // Opcode: 00001010
-        //     // Não há endereço a ser lido
-        // }
-        // else if (startsWith(instruction,"LOAD-M("))
-        // {
-        //     // Opcode 00000001
-        //     // Início endereço: 7
-        // }
-        // else if (startsWith(instruction,"LOAD--M("))
-        // {
-        //     // Opcode 00000010
-        //     // Início endereço: 8
-        // }
-        // else if (startsWith(instruction,"LOAD-|M("))
-        // {
-        //     // Opcode 00000011
-        //     // Início endereço: 8
-        // }
-        // else if (startsWith(instruction,"LOAD--|M("))
-        // {
-        //     // Opcode 00000100
-        //     // Início endereço: 9
-        // }
-        // else if (startsWith(instruction,"STOR-M("))
-        // {
-        //     // Início endereço: 7
-        //     if (endsWith(instruction,"8:19)"))
-        //     {
-        //         // Opcode 00010010
-        //     }
-        //     else if (endsWith(instruction, "28:39)"))
-        //     {
-        //         // Opcode 00010011
-        //     }
-        //     else
-        //     {
-        //         // Opcode 00100001
-        //     }
-        // }
-        // else if (startsWith(instruction,"JUMP-M("))
-        // {
-        //     // Início endereço: 7
-        //     if (endsWith(instruction,"0:19)"))
-        //     {
-        //         // Opcode 00001101
-        //     }
-        //     else if (endsWith(instruction, "20:39)"))
-        //     {
-        //         // Opcode 00001110
-        //     }
-        // }
-        // else if (startsWith(instruction,"JUMP+-M("))
-        // {
-        //     // Início endereço: 8
-        //     if (endsWith(instruction,"0:19)"))
-        //     {
-        //         // Opcode 00001111
-        //     }
-        //     else if (endsWith(instruction, "20:39)"))
-        //     {
-        //         // Opcode 00010000
-        //     }
-        // }
-        // else if (startsWith(instruction,"ADD-M("))
-        // {
-        //     // Opcode 00000101
-        //     // Início endereço: 6
-        // }
-        // else if (startsWith(instruction,"ADD-|M("))
-        // {
-        //     // Opcode 00000111
-        //     // Início endereço: 7
-        // }
-        // else if (startsWith(instruction,"SUB-M("))
-        // {
-        //     // Opcode 00000110
-        //     // Início endereço: 6
-        // }
-        // else if (startsWith(instruction,"SUB-|M("))
-        // {
-        //     // Opcode 00001000
-        //     // Início endereço: 7
-        // }
-        // else if (startsWith(instruction,"MUL-M("))
-        // {
-        //     // Opcode 00001011
-        //     // Início endereço: 6 
-        // }
-        // else if (startsWith(instruction,"DIV-M("))
-        // {
-        //     // Opcode 00001100
-        //     // Início endereço: 6
-        // }
-        // else if (startsWith(instruction,"LSH"))
-        // {
-        //     // Opcode 00010100
-        //     // Início endereço: Não há
-        // }
-        // else if (startsWith(instruction,"RSH"))
-        // {
-        //     // Opcode 00010101
-        //     // Início endereço: Não há
-        // }
-        // else if (startsWith(instruction,"EXIT"))
-        // {
-        //     // Opcode 11111111
-        //     // Início endereço: Não há
-        // }
-        // else
-        // {
-        //     printf("\n> Erro: Comando '%s' nao reconhecido, linha %d", opcode, linha);
-        // }
-        // if (strcmp(instruction, "LOAD") == 0)  printf("000000001\n");
-        // else if (strcmp(instruction, "ADD") == 0) printf("000000010\n");
+
     }
 
-    //printMemoryDec();
+    //dumpDaMemoria();
 
-
-    fclose(out);
-    fclose(f);
+    fclose(arquivoSaida);
+    fclose(arquivoEntrada);
     return 0;
 }
