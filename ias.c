@@ -76,7 +76,7 @@ int stringParaInt(char *bin)
     for (int k = strlen(bin)-1; k >= 0; k--)
     {
         if (bin[k] == '1')
-        {
+        {   
             num += (int)pow(2, i);
         }
         i++;
@@ -107,18 +107,30 @@ int64_t montaLinhaDeInstrucao (int opcode1, int operand1, int opcode2, int opera
     return final;
 }
 
-void armazenaNaMemoria(int endereco, int dado)
+void armazenaNaMemoria (int posicao, int64_t num, int8_t *memoria) //Guarda um valor na memoria - usado como encapsulamento
 {
-    /*
-        Guarda um valor na memoria - usado como encapsulamento
-        Entradas:
-            int endereco: O endereço de memória para se guardar o dado
-            int dado: O dado a ser armazenado
-    */
-    if(endereco <= TAMANHO_MEMORIA)
+    memoria += posicao*5; // posiciona o ponteiro da memórica no local correto da gravação na memória
+    for (int i = 0; i < 5; i++) 
     {
-        memoria[endereco] = dado;
+        memoria[i] = (num >> (i * 8)) & 0xFF; // em cada iteração, é lido 1 dos 5 blocos que compõe uma dada palavra da memória, então é feito
+                                              // um right-shif a fim de posicionar nos 8 bits menos significos de num a respectiva parte que 
+                                              // deseja-se escrever no momento no bloco da memória. Ainda, é feita uma operação de máscara para
+                                              // isolar os 8 bits menos significativos de num (os que serão escritos na memória naquela iteração)
     }
+}
+
+int64_t buscaNaMemoria (int8_t *memoria, int posicao)
+{
+    int64_t num = 0; // inicia o valor inteiro com 0
+    memoria += posicao*5; // calcula a posição que o ponteiro de leitura deve ficar na memória
+    for (int i = 0; i < 5; i++) // temos 5 iterações, uma para cada "bloco" de 8 bits, essa é a menor unidade que podemos ler de forma eficiente
+    {
+        num |= ((int64_t)memoria[i] << (i * 8)); // a cada iteração, é lido 1 dos 5 blocos que compõe uma palavra da memória,
+                                                 // de modo que, concomitantemente, também é feito o left-shift para posicionar
+                                                 // cada um dos "blocos" lidos em seu devido lugar no número final (num)
+    }
+    memoria -= posicao*5; // devolve a memória com o ponteiro posicionado na mesma posição que recebeu
+    return num;
 }
 
 void dumpDaMemoria() {
@@ -421,6 +433,8 @@ int main ()
     */
 
     char instrucao[100], opcode[6], operand[6];
+
+    int8_t *memoria = (int8_t *) malloc (4096*40);
 
     FILE *arquivoEntrada, *arquivoSaida;
     arquivoEntrada = fopen("instructions.txt", "r");
