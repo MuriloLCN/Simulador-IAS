@@ -136,13 +136,19 @@ uint64_t buscaNaMemoria (uint8_t *memoria, int posicao)
 void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, FILE *arquivoSaida)
 {
     char linha [30];
+    uint64_t numero_convertido;
     rewind(arquivoSaida);
     rewind(arquivoEntrada); // para garantir que irá ser lida as 500 primeiras linhas do arquivo de entrada
     for (int i = 0; i < 500; i++)
     {
         fgets(linha, 30, arquivoEntrada); // lê uma linha do arquivo de entrada
         fputs(linha, arquivoSaida);
-        uint64_t numero_convertido = strtoll(linha, NULL, 10); // converte a string para inteiro
+        if (linha[0] == '-') // se o número lido for negativo
+        {
+            numero_convertido = strtoll(linha+1, NULL, 10); // converte a string para inteiro (pulando o caractere -)
+            numero_convertido |= 549755813888; // faz com que o bit mais significativo assuma valor 1, indicando que o número é negativo
+        }
+        else numero_convertido = strtoll(linha, NULL, 10); // converte a string para inteiro
         printf("Número lido: %"PRId64" linha%d\n", numero_convertido, i);
         armazenaNaMemoria(i, numero_convertido, memoria); // grava na memória o dado lido
     }
