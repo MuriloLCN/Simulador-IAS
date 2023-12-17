@@ -153,11 +153,14 @@ void dumpDaMemoria(int8_t *memoria) {
         Realiza um dump de todo o conteúdo da memória em um arquivo output.txt
     */
     FILE *outFile;
+    int64_t palavra;
+
     outFile = fopen("saida.txt", "w");
 
-    int i=0;
-    while (memoria[i] != 0) {
-        fwrite(memoria[i], 1, sizeof(int), outFile);
+    for (int i = 0; i < 4095; i++)
+    {
+        palavra = buscaNaMemoria(memoria, i);
+        fprintf(outFile, "%"PRId64"\n", palavra);
     }
 
     fclose(outFile);
@@ -534,7 +537,7 @@ int main ()
     
     completaMemoria(PC, memoria);
 
-    //dumpDaMemoria();
+    dumpDaMemoria(memoria);
     
     free(memoria);
     fclose(arquivoSaida);
