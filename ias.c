@@ -10,7 +10,7 @@
 typedef enum {False, True} booleano;
 
 void printbits(int64_t n){
-    char str[40];
+    char str[41];
     for (int i = 39; i >= 0; i--)
     {
         if (n % 2 == 0)
@@ -23,6 +23,7 @@ void printbits(int64_t n){
         }
         n = n/2;
     }
+    str[40] = '\0';
     printf("%s", str);
     printf("\n");
 }
@@ -124,48 +125,120 @@ int64_t montaLinhaDeInstrucao (int opcode1, int operand1, int opcode2, int opera
     return final;
 }
 
-void armazenaNaMemoria (int posicao, int64_t num, int8_t *memoria) //Guarda um valor na memoria - usado como encapsulamento
+// void armazenaNaMemoria (int posicao, int64_t num, int8_t *memoria) //Guarda um valor na memoria - usado como encapsulamento
+// {
+//     memoria += posicao*5; // posiciona o ponteiro da memórica no local correto da gravação na memória
+//     for (int i = 0; i < 5; i++) 
+//     {
+//         memoria[i] = (num >> (i * 8)) & 0xFF; // em cada iteração, é lido 1 dos 5 blocos que compõe uma dada palavra da memória, então é feito
+//                                               // um right-shif a fim de posicionar nos 8 bits menos significos de num a respectiva parte que 
+//                                               // deseja-se escrever no momento no bloco da memória. Ainda, é feita uma operação de máscara para
+//                                               // isolar os 8 bits menos significativos de num (os que serão escritos na memória naquela iteração)
+//     }
+// }
+
+// int64_t buscaNaMemoria (int8_t *memoria, int posicao)
+// {
+//     int64_t num = 0; // inicia o valor inteiro com 0
+//     // memoria += posicao*5; // calcula a posição que o ponteiro de leitura deve ficar na memória
+//     for (int i = 0; i < 5; i++) // temos 5 iterações, uma para cada "bloco" de 8 bits, essa é a menor unidade que podemos ler de forma eficiente
+//     {
+//         num |= (((int64_t)memoria[posicao*5 + i]) << (i * 8)); // a cada iteração, é lido 1 dos 5 blocos que compõe uma palavra da memória,
+//                                                  // de modo que, concomitantemente, também é feito o left-shift para posicionar
+//                                                  // cada um dos "blocos" lidos em seu devido lugar no número final (num)
+//     }
+//     // memoria -= posicao*5; // devolve a memória com o ponteiro posicionado na mesma posição que recebeu
+//     return num;
+// }
+
+void codificarBloquinhosInt64(int64_t numero, uint8_t* bloquinhos)
 {
-    memoria += posicao*5; // posiciona o ponteiro da memórica no local correto da gravação na memória
-    for (int i = 0; i < 5; i++) 
+    /*
+        Divide um int64_t (com 40 bits usados) em cinco blocos de int8_t em vetor
+    */
+    for (int i = 4; i >= 0; i--)
     {
-        memoria[i] = (num >> (i * 8)) & 0xFF; // em cada iteração, é lido 1 dos 5 blocos que compõe uma dada palavra da memória, então é feito
-                                              // um right-shif a fim de posicionar nos 8 bits menos significos de num a respectiva parte que 
-                                              // deseja-se escrever no momento no bloco da memória. Ainda, é feita uma operação de máscara para
-                                              // isolar os 8 bits menos significativos de num (os que serão escritos na memória naquela iteração)
+        uint8_t valor = 0;
+        for (int j = 0; j < 8; j++)
+        {
+            if (numero % 2 == 1)
+            {
+                valor += pow(2, j);
+            }
+
+            numero = numero/2;
+        }
+        bloquinhos[i] = valor;
     }
 }
 
-int64_t buscaNaMemoria (int8_t *memoria, int posicao)
+int64_t decodificarBloquinhosInt8(uint8_t* bloquinhos)
 {
-    int64_t num = 0; // inicia o valor inteiro com 0
-    memoria += posicao*5; // calcula a posição que o ponteiro de leitura deve ficar na memória
-    for (int i = 0; i < 5; i++) // temos 5 iterações, uma para cada "bloco" de 8 bits, essa é a menor unidade que podemos ler de forma eficiente
-    {
-        num |= (((int64_t)memoria[i]) << (i * 8)); // a cada iteração, é lido 1 dos 5 blocos que compõe uma palavra da memória,
-                                                 // de modo que, concomitantemente, também é feito o left-shift para posicionar
-                                                 // cada um dos "blocos" lidos em seu devido lugar no número final (num)
-    }
-    memoria -= posicao*5; // devolve a memória com o ponteiro posicionado na mesma posição que recebeu
-    return num;
+    int64_t valor = 0;
+    
+    valor |= ((int64_t)bloquinhos[0] & 0xFF) << 32;
+    valor |= ((int64_t)bloquinhos[1] & 0xFF) << 24;
+    valor |= ((int64_t)bloquinhos[2] & 0xFF) << 16;
+    valor |= ((int64_t)bloquinhos[3] & 0xFF) << 8;
+    valor |= bloquinhos[4] & 0xFF;
+
+    return valor;
 }
 
-void carregaDados (FILE *arquivoEntrada,  int8_t *memoria, FILE *arquivoSaida)
+void armazenaNaMemoria (int posicao, int64_t num, uint8_t *memoria) //Guarda um valor na memoria - usado como encapsulamento
 {
+    int indice_inicio = posicao * 5;
+
+    uint8_t bloquinhos[5];
+
+    for (int i = 0; i < 5; i++)
+    {
+        bloquinhos[i] = 0;
+    }
+
+    codificarBloquinhosInt64(num, bloquinhos);
+
+    for (int j = 0; j < 5; j++)
+    {
+        memoria[posicao*5 + j] = (int8_t)bloquinhos[j];
+    }
+}
+
+int64_t buscaNaMemoria (uint8_t *memoria, int posicao)
+{
+    uint8_t bloquinhos[5];
+
+    for (int i = 0; i < 5; i++)
+    {
+        bloquinhos[i] = memoria[posicao*5 + i];
+    }
+
+    int64_t valor = decodificarBloquinhosInt8(bloquinhos);
+
+    uint8_t bloquinhos_teste[5];
+
+    codificarBloquinhosInt64(valor, bloquinhos_teste);
+
+    return valor;
+}
+
+void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, FILE *arquivoSaida)
+{
+    
     char linha [30];
     rewind(arquivoSaida);
     rewind(arquivoEntrada); // para garantir que irá ser lida as 500 primeiras linhas do arquivo de entrada
     for (int i = 0; i < 500; i++)
     {
+        char str[40];
         fgets(linha, 30, arquivoEntrada); // lê uma linha do arquivo de entrada
         fputs(linha, arquivoSaida);
         int64_t numero_convertido = strtoll(linha, NULL, 10); // converte a string para inteiro
-        printf("Número lido: %"PRId64" linha%d\n", numero_convertido, i);
         armazenaNaMemoria(i, numero_convertido, memoria); // grava na memória o dado lido
     }
 }
 
-void printMemoria(int8_t* memoria)
+void printMemoria(uint8_t* memoria)
 {
     int64_t palavra;
 
@@ -177,7 +250,7 @@ void printMemoria(int8_t* memoria)
     }
 }
 
-void dumpDaMemoria(int8_t *memoria) {
+void dumpDaMemoria(uint8_t *memoria) {
     /*
         Realiza um dump de todo o conteúdo da memória em um arquivo output.txt
     */
@@ -472,7 +545,7 @@ void converteInstrucao(char* instrucao, char* opcode, int* endereco)
     }
 }
 
-void completaMemoria (int PC, int8_t *memoria) // completa a memórica com o valor 0
+void completaMemoria (int PC, uint8_t *memoria) // completa a memórica com o valor 0
 {
     for (int i = PC; i < 4095; i++)
     {
@@ -485,11 +558,11 @@ int main ()
     /*
         Ponto de entrada principal do programa
     */
-    int64_t teste = 1;
-    printbits(teste);
     char instrucao[100], opcode[6], operand[6];
 
-    int8_t *memoria = (int8_t *) malloc (4096*40);
+    uint8_t memoria[4096 * 5];
+
+    // int8_t *memoria = (int8_t *) malloc (4096*40);
 
     FILE *arquivoEntrada, *arquivoSaida;
     arquivoEntrada = fopen("instructions.txt", "r");
@@ -527,15 +600,13 @@ int main ()
             instrucao[strlen(instrucao) - 1] = '\0';
         }
 
-        // A fazer: leitura **integral** das 500 primeiras linhas aqui
-
         converteInstrucao(instrucao, opcodeString, &endereco);
 
         int opcodeInt = stringParaInt(opcodeString);
 
         //armazenaNaMemoria(endereco, opcode);
 
-        printf("\nOpcode: %s endereco: %d instrucao: \"%s\"", opcodeString, endereco, instrucao);
+        // printf("\nOpcode: %s endereco: %d instrucao: \"%s\"", opcodeString, endereco, instrucao);
 
         if (opcodeInt == 255 && controle == False) // se leu a última instrução e não há instrução da direita
         {
@@ -569,9 +640,9 @@ int main ()
     
     // completaMemoria(PC, memoria);
     printMemoria(memoria);
-    // dumpDaMemoria(memoria);
+    dumpDaMemoria(memoria);
     
-    free(memoria);
+    // free(memoria);
     fclose(arquivoSaida);
     fclose(arquivoEntrada);
     return 0;
