@@ -84,7 +84,7 @@ int stringParaInt(char *bin)
     return num;
 }
 
-int64_t montaLinhaDeInstrucao (int opcode1, int operand1, int opcode2, int operand2)
+uint64_t montaLinhaDeInstrucao (int opcode1, int operand1, int opcode2, int operand2)
 {
     /*
         Monta uma linha de memória de instrução IAS, sendo composta de duas instruções individuais justapostas
@@ -95,7 +95,7 @@ int64_t montaLinhaDeInstrucao (int opcode1, int operand1, int opcode2, int opera
         int operand2: O inteiro representando o argumento da instrução à direita da linha
     */
 
-    int64_t final = 0;
+    uint64_t final = 0;
     final = final | opcode1;
     final = final << 12;
     final = final | operand1;
@@ -107,7 +107,7 @@ int64_t montaLinhaDeInstrucao (int opcode1, int operand1, int opcode2, int opera
     return final;
 }
 
-void armazenaNaMemoria (int posicao, int64_t num, int8_t *memoria) //Guarda um valor na memoria - usado como encapsulamento
+void armazenaNaMemoria (int posicao, uint64_t num, uint8_t *memoria) //Guarda um valor na memoria - usado como encapsulamento
 {
     memoria += posicao*5; // posiciona o ponteiro da memórica no local correto da gravação na memória
     for (int i = 0; i < 5; i++) 
@@ -119,13 +119,13 @@ void armazenaNaMemoria (int posicao, int64_t num, int8_t *memoria) //Guarda um v
     }
 }
 
-int64_t buscaNaMemoria (int8_t *memoria, int posicao)
+uint64_t buscaNaMemoria (uint8_t *memoria, int posicao)
 {
-    int64_t num = 0; // inicia o valor inteiro com 0
+    uint64_t num = 0; // inicia o valor inteiro com 0
     memoria += posicao*5; // calcula a posição que o ponteiro de leitura deve ficar na memória
     for (int i = 0; i < 5; i++) // temos 5 iterações, uma para cada "bloco" de 8 bits, essa é a menor unidade que podemos ler de forma eficiente
     {
-        num |= ((int64_t)memoria[i] << (i * 8)); // a cada iteração, é lido 1 dos 5 blocos que compõe uma palavra da memória,
+        num |= ((uint64_t)memoria[i] << (i * 8)); // a cada iteração, é lido 1 dos 5 blocos que compõe uma palavra da memória,
                                                  // de modo que, concomitantemente, também é feito o left-shift para posicionar
                                                  // cada um dos "blocos" lidos em seu devido lugar no número final (num)
     }
@@ -133,7 +133,7 @@ int64_t buscaNaMemoria (int8_t *memoria, int posicao)
     return num;
 }
 
-void carregaDados (FILE *arquivoEntrada,  int8_t *memoria, FILE *arquivoSaida)
+void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, FILE *arquivoSaida)
 {
     char linha [30];
     rewind(arquivoSaida);
@@ -142,18 +142,18 @@ void carregaDados (FILE *arquivoEntrada,  int8_t *memoria, FILE *arquivoSaida)
     {
         fgets(linha, 30, arquivoEntrada); // lê uma linha do arquivo de entrada
         fputs(linha, arquivoSaida);
-        int64_t numero_convertido = strtoll(linha, NULL, 10); // converte a string para inteiro
+        uint64_t numero_convertido = strtoll(linha, NULL, 10); // converte a string para inteiro
         printf("Número lido: %"PRId64" linha%d\n", numero_convertido, i);
         armazenaNaMemoria(i, numero_convertido, memoria); // grava na memória o dado lido
     }
 }
 
-void dumpDaMemoria(int8_t *memoria) {
+void dumpDaMemoria(uint8_t *memoria) {
     /*
         Realiza um dump de todo o conteúdo da memória em um arquivo output.txt
     */
     FILE *outFile;
-    int64_t palavra;
+    uint64_t palavra;
 
     outFile = fopen("saida.txt", "w");
 
@@ -443,7 +443,7 @@ void converteInstrucao(char* instrucao, char* opcode, int* endereco)
     }
 }
 
-void completaMemoria (int PC, int8_t *memoria) // completa a memórica com o valor 0
+void completaMemoria (int PC, uint8_t *memoria) // completa a memórica com o valor 0
 {
     for (int i = PC; i < 4095; i++)
     {
@@ -459,7 +459,7 @@ int main ()
 
     char instrucao[100], opcode[6], operand[6];
 
-    int8_t *memoria = (int8_t *) malloc (4096*40);
+    uint8_t *memoria = (uint8_t *) malloc (4096*40);
 
     FILE *arquivoEntrada, *arquivoSaida;
     arquivoEntrada = fopen("instructions.txt", "r");
@@ -482,7 +482,7 @@ int main ()
 
         char opcodeString[8];
         int endereco;
-        int64_t valor;  // Caso o endereço corresponda a um número
+        uint64_t valor;  // Caso o endereço corresponda a um número
 
 
         // Removendo possíveis \n ou \n\r no final de cada linha
@@ -507,7 +507,7 @@ int main ()
 
         if (opcodeInt == 255 && controle == False) // se leu a última instrução e não há instrução da direita
         {
-            int64_t word = montaLinhaDeInstrucao(opcodeInt, endereco, 0, 0);
+            uint64_t word = montaLinhaDeInstrucao(opcodeInt, endereco, 0, 0);
             armazenaNaMemoria(PC, word, memoria);
             fprintf(arquivoSaida, "%"PRId64"\n", word);
             PC++;
