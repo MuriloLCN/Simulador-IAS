@@ -3,12 +3,29 @@
 #include <string.h>
 #include <math.h>
 #include <inttypes.h>
+#include <limits.h>
 
 #define TAMANHO_MEMORIA 4096
 
 typedef enum {False, True} booleano;
 
-int memoria[TAMANHO_MEMORIA] = {0};
+void printbits(int64_t n){
+    char str[40];
+    for (int i = 39; i >= 0; i--)
+    {
+        if (n % 2 == 0)
+        {
+            str[i] = '0';
+        }
+        else
+        {
+            str[i] = '1';
+        }
+        n = n/2;
+    }
+    printf("%s", str);
+    printf("\n");
+}
 
 int pegaParametroInstrucao(char *instrucao, int index)
 {
@@ -125,7 +142,7 @@ int64_t buscaNaMemoria (int8_t *memoria, int posicao)
     memoria += posicao*5; // calcula a posição que o ponteiro de leitura deve ficar na memória
     for (int i = 0; i < 5; i++) // temos 5 iterações, uma para cada "bloco" de 8 bits, essa é a menor unidade que podemos ler de forma eficiente
     {
-        num |= ((int64_t)memoria[i] << (i * 8)); // a cada iteração, é lido 1 dos 5 blocos que compõe uma palavra da memória,
+        num |= (((int64_t)memoria[i]) << (i * 8)); // a cada iteração, é lido 1 dos 5 blocos que compõe uma palavra da memória,
                                                  // de modo que, concomitantemente, também é feito o left-shift para posicionar
                                                  // cada um dos "blocos" lidos em seu devido lugar no número final (num)
     }
@@ -148,6 +165,18 @@ void carregaDados (FILE *arquivoEntrada,  int8_t *memoria, FILE *arquivoSaida)
     }
 }
 
+void printMemoria(int8_t* memoria)
+{
+    int64_t palavra;
+
+    for (int i = 0; i < 4095; i++)
+    {
+        palavra = buscaNaMemoria(memoria, i);
+        printf("%d: ", i);
+        printbits(palavra);
+    }
+}
+
 void dumpDaMemoria(int8_t *memoria) {
     /*
         Realiza um dump de todo o conteúdo da memória em um arquivo output.txt
@@ -160,7 +189,7 @@ void dumpDaMemoria(int8_t *memoria) {
     for (int i = 0; i < 4095; i++)
     {
         palavra = buscaNaMemoria(memoria, i);
-        fprintf(outFile, "%"PRId64"\n", palavra);
+        fprintf(outFile, "%"PRIu64"\n", palavra);
     }
 
     fclose(outFile);
@@ -456,7 +485,8 @@ int main ()
     /*
         Ponto de entrada principal do programa
     */
-
+    int64_t teste = 1;
+    printbits(teste);
     char instrucao[100], opcode[6], operand[6];
 
     int8_t *memoria = (int8_t *) malloc (4096*40);
@@ -471,8 +501,10 @@ int main ()
     int opcodeEsquerdo, enderecoEsquerdo;
     booleano controle = False;
 
-    carregaDados(arquivoEntrada, memoria, arquivoSaida);
+    completaMemoria(0, memoria);
 
+    carregaDados(arquivoEntrada, memoria, arquivoSaida);
+    
     int PC = 500; // as posições de 0 até a 499 já foram lidas
     
     // Lê linha a linha do arquivo de entrada
@@ -535,9 +567,9 @@ int main ()
         }
     }
     
-    completaMemoria(PC, memoria);
-
-    dumpDaMemoria(memoria);
+    // completaMemoria(PC, memoria);
+    printMemoria(memoria);
+    // dumpDaMemoria(memoria);
     
     free(memoria);
     fclose(arquivoSaida);
