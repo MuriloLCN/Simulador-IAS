@@ -494,23 +494,33 @@ int main ()
 
         printf("\nOpcode: %s endereco: %d instrucao: \"%s\"", opcodeString, endereco, instrucao);
 
-        if (!controle)
+        if (opcodeInt == 255 && controle == False) // se leu a última instrução e não há instrução da direita
         {
-            // Caso a instrução lida tenha que ir na esquerda da seção de memória
-            opcodeEsquerdo = opcodeInt;
-            enderecoEsquerdo = endereco;
-            controle = True;
-        }
-        else
-        {
-            // Caso a instrução lida tenha que ir na direita da seção de memória, monta a linha e armazena
-            int64_t word = montaLinhaDeInstrucao(opcodeEsquerdo, enderecoEsquerdo, opcodeInt, endereco);
+            int64_t word = montaLinhaDeInstrucao(opcodeInt, endereco, 0, 0);
             armazenaNaMemoria(PC, word, memoria);
             fprintf(arquivoSaida, "%"PRId64"\n", word);
-            PC++;
-            controle = False;
+            break;
         }
-
+        
+        else 
+        {
+            if (!controle)
+            {
+                // Caso a instrução lida tenha que ir na esquerda da seção de memória
+                opcodeEsquerdo = opcodeInt;
+                enderecoEsquerdo = endereco;
+                controle = True;
+            }
+            else
+            {
+                // Caso a instrução lida tenha que ir na direita da seção de memória, monta a linha e armazena
+                int64_t word = montaLinhaDeInstrucao(opcodeEsquerdo, enderecoEsquerdo, opcodeInt, endereco);
+                armazenaNaMemoria(PC, word, memoria);
+                fprintf(arquivoSaida, "%"PRId64"\n", word);
+                PC++;
+                controle = False;
+            }
+        }
     }
 
     //dumpDaMemoria();
