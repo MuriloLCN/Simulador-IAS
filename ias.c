@@ -130,6 +130,15 @@ uint64_t buscaNaMemoria (uint8_t *memoria, int posicao)
                                                  // cada um dos "blocos" lidos em seu devido lugar no número final (num)
     }
     memoria -= posicao*5; // devolve a memória com o ponteiro posicionado na mesma posição que recebeu
+
+    if (posicao <= 499) // Se é um valor numérico e não uma instrução
+    {
+        if (((num & 549755813888) >> 39) == 1) // Se é negativo
+        {
+            num = num & 549755813887; // Tira o primeiro bit
+            num *= -1;
+        }
+    }
     return num;
 }
 
