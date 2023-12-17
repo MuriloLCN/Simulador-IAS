@@ -302,7 +302,7 @@ void converteInstrucao(char* instrucao, char* opcode, int* endereco)
     {
         // Opcode 00000010 (2)
         // Início endereço: 8
-        strcpy(opcode, "000010010");
+        strcpy(opcode, "00000010");
         *endereco = pegaParametroInstrucao(instrucao, 8);
     }
     else if (comecaCom(instrucao,"LOAD |M("))
