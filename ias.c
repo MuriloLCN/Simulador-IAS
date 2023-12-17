@@ -274,49 +274,49 @@ void converteInstrucao(char* instrucao, char* opcode, int* endereco)
 
         Em caso de erro (instrução não reconhecida), retorna "00000000" para o opcode e -1 para o endereço
     */
-    if (comecaCom(instrucao,"LOAD-MQ,M("))
+    if (comecaCom(instrucao,"LOAD MQ,M("))
     {
         // Opcode: 00001001 (9)
         // Inicio endereço: posicao 10
         strcpy(opcode, "00001001");
         *endereco = pegaParametroInstrucao(instrucao, 10);
     }
-    else if (comecaCom(instrucao,"LOAD-MQ"))
+    else if (comecaCom(instrucao,"LOAD MQ"))
     {
         // Opcode: 00001010 (10)
         // Não há endereço a ser lido
         strcpy(opcode, "00001010");
         *endereco = 0;
     }
-    else if (comecaCom(instrucao,"LOAD-M("))
+    else if (comecaCom(instrucao,"LOAD M("))
     {
         // Opcode 00000001 (1)
         // Início endereço: 7
         strcpy(opcode, "00000001");
         *endereco = pegaParametroInstrucao(instrucao, 7);
     }
-    else if (comecaCom(instrucao,"LOAD--M("))
+    else if (comecaCom(instrucao,"LOAD- M("))
     {
         // Opcode 00000010 (2)
         // Início endereço: 8
         strcpy(opcode, "000010010");
         *endereco = pegaParametroInstrucao(instrucao, 8);
     }
-    else if (comecaCom(instrucao,"LOAD-|M("))
+    else if (comecaCom(instrucao,"LOAD |M("))
     {
         // Opcode 00000011 (3)
         // Início endereço: 8
         strcpy(opcode, "00000011");
         *endereco = pegaParametroInstrucao(instrucao, 8);
     }
-    else if (comecaCom(instrucao,"LOAD--|M("))
+    else if (comecaCom(instrucao,"LOAD- |M("))
     {
         // Opcode 00000100 (4)
         // Início endereço: 9
         strcpy(opcode, "00000100");
         *endereco = pegaParametroInstrucao(instrucao, 9);
     }
-    else if (comecaCom(instrucao,"STOR-M("))
+    else if (comecaCom(instrucao,"STOR M("))
     {
         // Início endereço: 7
         if (terminaCom(instrucao,"8:19)"))
@@ -338,7 +338,7 @@ void converteInstrucao(char* instrucao, char* opcode, int* endereco)
             *endereco = pegaParametroInstrucao(instrucao, 7);
         }
     }
-    else if (comecaCom(instrucao,"JUMP-M("))
+    else if (comecaCom(instrucao,"JUMP M("))
     {
         // Início endereço: 7
         if (terminaCom(instrucao,"0:19)"))
@@ -354,7 +354,7 @@ void converteInstrucao(char* instrucao, char* opcode, int* endereco)
             *endereco = pegaParametroInstrucao(instrucao, 7);
         }
     }
-    else if (comecaCom(instrucao,"JUMP+-M("))
+    else if (comecaCom(instrucao,"JUMP+ M("))
     {
         // Início endereço: 8
         if (terminaCom(instrucao,"0:19)"))
@@ -370,42 +370,42 @@ void converteInstrucao(char* instrucao, char* opcode, int* endereco)
             *endereco = pegaParametroInstrucao(instrucao, 8);
         }
     }
-    else if (comecaCom(instrucao,"ADD-M("))
+    else if (comecaCom(instrucao,"ADD M("))
     {
         // Opcode 00000101 (5)
         // Início endereço: 6
         strcpy(opcode, "00000101");
         *endereco = pegaParametroInstrucao(instrucao, 6);
     }
-    else if (comecaCom(instrucao,"ADD-|M("))
+    else if (comecaCom(instrucao,"ADD |M("))
     {
         // Opcode 00000111 (7)
         // Início endereço: 7
         strcpy(opcode, "00000111");
         *endereco = pegaParametroInstrucao(instrucao, 7);
     }
-    else if (comecaCom(instrucao,"SUB-M("))
+    else if (comecaCom(instrucao,"SUB M("))
     {
         // Opcode 00000110 (6)
         // Início endereço: 6
         strcpy(opcode, "00000110");
         *endereco = pegaParametroInstrucao(instrucao, 6);
     }
-    else if (comecaCom(instrucao,"SUB-|M("))
+    else if (comecaCom(instrucao,"SUB |M("))
     {
         // Opcode 00001000 (8)
         // Início endereço: 7
         strcpy(opcode, "00001000");
         *endereco = pegaParametroInstrucao(instrucao, 7);
     }
-    else if (comecaCom(instrucao,"MUL-M("))
+    else if (comecaCom(instrucao,"MUL M("))
     {
         // Opcode 00001011 (11)
         // Início endereço: 6
         strcpy(opcode, "00001011");
         *endereco = pegaParametroInstrucao(instrucao, 6);
     }
-    else if (comecaCom(instrucao,"DIV-M("))
+    else if (comecaCom(instrucao,"DIV M("))
     {
         // Opcode 00001100 (12)
         // Início endereço: 6
@@ -437,6 +437,14 @@ void converteInstrucao(char* instrucao, char* opcode, int* endereco)
     {
         strcpy(opcode, "00000000");
         *endereco = -1;
+    }
+}
+
+void completaMemoria (int PC, int8_t *memoria) // completa a memórica com o valor 0
+{
+    for (int i = PC; i < 4095; i++)
+    {
+        armazenaNaMemoria(i, 0, memoria);
     }
 }
 
@@ -499,6 +507,7 @@ int main ()
             int64_t word = montaLinhaDeInstrucao(opcodeInt, endereco, 0, 0);
             armazenaNaMemoria(PC, word, memoria);
             fprintf(arquivoSaida, "%"PRId64"\n", word);
+            PC++;
             break;
         }
         
@@ -522,9 +531,12 @@ int main ()
             }
         }
     }
+    
+    completaMemoria(PC, memoria);
 
     //dumpDaMemoria();
-
+    
+    free(memoria);
     fclose(arquivoSaida);
     fclose(arquivoEntrada);
     return 0;
