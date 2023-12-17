@@ -133,13 +133,27 @@ int64_t buscaNaMemoria (int8_t *memoria, int posicao)
     return num;
 }
 
-void dumpDaMemoria() {
+void carregaDados (FILE *arquivoEntrada,  int8_t *memoria, FILE *arquivoSaida)
+{
+    char linha [30];
+    rewind(arquivoSaida);
+    rewind(arquivoEntrada); // para garantir que irá ser lida as 500 primeiras linhas do arquivo de entrada
+    for (int i = 0; i < 500; i++)
+    {
+        fgets(linha, 30, arquivoEntrada); // lê uma linha do arquivo de entrada
+        fputs(linha, arquivoSaida);
+        int64_t numero_convertido = strtoll(linha, NULL, 10); // converte a string para inteiro
+        printf("Número lido: %"PRId64" linha%d\n", numero_convertido, i);
+        armazenaNaMemoria(i, numero_convertido, memoria); // grava na memória o dado lido
+    }
+}
+
+void dumpDaMemoria(int8_t *memoria) {
     /*
         Realiza um dump de todo o conteúdo da memória em um arquivo output.txt
     */
-
     FILE *outFile;
-    outFile = fopen("output.txt", "w");
+    outFile = fopen("saida.txt", "w");
 
     int i=0;
     while (memoria[i] != 0) {
@@ -446,6 +460,10 @@ int main ()
     int opcodeEsquerdo, enderecoEsquerdo;
     booleano controle = False;
 
+    carregaDados(arquivoEntrada, memoria, arquivoSaida);
+
+    int PC = 500; // as posições de 0 até a 499 já foram lidas
+    
     // Lê linha a linha do arquivo de entrada
     while(fgets(instrucao, 100, arquivoEntrada) != NULL)
     {
@@ -487,7 +505,9 @@ int main ()
         {
             // Caso a instrução lida tenha que ir na direita da seção de memória, monta a linha e armazena
             int64_t word = montaLinhaDeInstrucao(opcodeEsquerdo, enderecoEsquerdo, opcodeInt, endereco);
+            armazenaNaMemoria(PC, word, memoria);
             fprintf(arquivoSaida, "%"PRId64"\n", word);
+            PC++;
             controle = False;
         }
 
