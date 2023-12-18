@@ -170,6 +170,27 @@ uint64_t buscaNaMemoria (uint8_t *memoria, int posicao)
     return num;
 }
 
+int64_t converteDado(uint64_t entrada)
+{
+    /*
+        Converte um valor uint64_t da memória para um int64_t normal para que possa ser trabalhado com operações em C
+        Isso pois a representação de negativos pedida foi sinal magnitude porém a linguagem C utiliza complemento de dois
+        Entrada:
+            uint64_t entrada: O valor que se quer converter
+        Retorna o valor convertido para complemento de dois
+    */
+
+    int64_t magnitude = entrada & 549755813887;
+    int sinal = (entrada & 549755813888) >> 39;
+
+    if (sinal == 1)
+    {
+        magnitude *= -1;
+    }
+
+    return magnitude;
+}
+
 void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria) // FILE *arquivoSaida)
 {
     /*
@@ -206,6 +227,7 @@ void dumpDaMemoria(uint8_t *memoria) {
     FILE *saidaBinaria;
 
     uint64_t palavra;
+    int64_t dado;
 
     saida = fopen("saida.txt", "w");
     saidaBinaria = fopen("saida_binario.txt", "w");
@@ -213,8 +235,15 @@ void dumpDaMemoria(uint8_t *memoria) {
     for (int i = 0; i < 4095; i++)
     {
         palavra = buscaNaMemoria(memoria, i);
-        fprintf(saida, "%"PRId64"\n", palavra);
 
+        if (i <= 499)
+        {
+            dado = converteDado(palavra);
+            fprintf(saida, "%"PRId64"\n", dado);
+        }
+        else {
+            fprintf(saida, "%"PRId64"\n", palavra);
+        }
         char str[41];
         for (int i = 39; i >= 0; i--)
         {
