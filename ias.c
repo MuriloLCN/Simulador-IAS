@@ -8,9 +8,6 @@
 
 typedef enum {False, True} booleano;
 
-
-int memoria[TAMANHO_MEMORIA] = {0};
-
 // Cabeçalhos de funções
 void printBits(int64_t n);
 void printMemoria(uint8_t* memoria);
@@ -170,19 +167,10 @@ uint64_t buscaNaMemoria (uint8_t *memoria, int posicao)
     }
     memoria -= posicao*5;  // Devolve a memória com o ponteiro posicionado na mesma posição que recebeu
 
-    if (posicao <= 499)  // Se é um valor numérico e não uma instrução
-    {
-        if (((num & 549755813888) >> 39) == 1)  // Se é negativo
-        {
-            num = num & 549755813887;  // Tira o primeiro bit
-            num *= -1;
-        }
-    }
     return num;
 }
 
-// A rever
-void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, FILE *arquivoSaida)
+void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria) // FILE *arquivoSaida)
 {
     /*
         Carrega as 500 primeiras linhas do arquivo de entrada (i.e, que contém dados) para a memória
@@ -193,39 +181,59 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, FILE *arquivoSaida)
     */
     char linha [30];
     uint64_t numero_convertido;
-    rewind(arquivoSaida);
+    // rewind(arquivoSaida);
     rewind(arquivoEntrada); // para garantir que irá ser lida as 500 primeiras linhas do arquivo de entrada
     for (int i = 0; i < 500; i++)
     {
         fgets(linha, 30, arquivoEntrada); // lê uma linha do arquivo de entrada
-        fputs(linha, arquivoSaida);
+        // fputs(linha, arquivoSaida);
         if (linha[0] == '-') // se o número lido for negativo
         {
             numero_convertido = strtoll(linha+1, NULL, 10); // converte a string para inteiro (pulando o caractere -)
             numero_convertido |= 549755813888; // faz com que o bit mais significativo assuma valor 1, indicando que o número é negativo
         }
         else numero_convertido = strtoll(linha, NULL, 10); // converte a string para inteiro
-        printf("Número lido: %"PRId64" linha%d\n", numero_convertido, i);
+        // printf("Número lido: %"PRId64" linha%d\n", numero_convertido, i);
         armazenaNaMemoria(i, numero_convertido, memoria); // grava na memória o dado lido
     }
 }
 
 void dumpDaMemoria(uint8_t *memoria) {
     /*
-        Realiza um dump de todo o conteúdo da memória em um arquivo saida.txt
+        Realiza um dump de todo o conteúdo da memória em um arquivo saida.txt e sua representação binária em saida_binario.txt
     */
-    FILE *outFile;
+    FILE *saida;
+    FILE *saidaBinaria;
+
     uint64_t palavra;
 
-    outFile = fopen("saida.txt", "w");
+    saida = fopen("saida.txt", "w");
+    saidaBinaria = fopen("saida_binario.txt", "w");
 
     for (int i = 0; i < 4095; i++)
     {
         palavra = buscaNaMemoria(memoria, i);
-        fprintf(outFile, "%"PRId64"\n", palavra);
+        fprintf(saida, "%"PRId64"\n", palavra);
+
+        char str[41];
+        for (int i = 39; i >= 0; i--)
+        {
+            if (palavra % 2 == 0)
+            {
+                str[i] = '0';
+            }
+            else
+            {
+                str[i] = '1';
+            }
+            palavra = palavra/2;
+        }
+        str[40] = '\0';
+        fprintf(saidaBinaria, "%s\n", str);
     }
 
-    fclose(outFile);
+    fclose(saida);
+    fclose(saidaBinaria);   
 }
 
 /*
@@ -574,9 +582,9 @@ int main ()
     uint8_t *memoria = (uint8_t *) malloc (4096*40);
     completaMemoria(0, memoria);
 
-    FILE *arquivoEntrada, *arquivoSaida;
+    FILE *arquivoEntrada; // *arquivoSaida;
     arquivoEntrada = fopen("instructions.txt", "r");
-    arquivoSaida = fopen("out.txt", "w");
+    // arquivoSaida = fopen("out.txt", "w");
 
     int linhaAtualDeLeitura = 0;
 
@@ -584,7 +592,7 @@ int main ()
     int opcodeEsquerdo, enderecoEsquerdo;
     booleano controle = False;
 
-    carregaDados(arquivoEntrada, memoria, arquivoSaida);
+    carregaDados(arquivoEntrada, memoria); // arquivoSaida);
 
     int PC = 500; // as posições de 0 até a 499 já foram lidas
     
@@ -616,13 +624,13 @@ int main ()
 
         //armazenaNaMemoria(endereco, opcode);
 
-        printf("\nOpcode: %s endereco: %d instrucao: \"%s\"", opcodeString, endereco, instrucao);
+        // printf("\nOpcode: %s endereco: %d instrucao: \"%s\"", opcodeString, endereco, instrucao);
 
         if (opcodeInt == 255 && controle == False) // se leu a última instrução e não há instrução da direita
         {
             uint64_t word = montaLinhaDeInstrucao(opcodeInt, endereco, 0, 0);
             armazenaNaMemoria(PC, word, memoria);
-            fprintf(arquivoSaida, "%"PRId64"\n", word);
+            // fprintf(arquivoSaida, "%"PRId64"\n", word);
             PC++;
             break;
         }
@@ -641,7 +649,7 @@ int main ()
                 // Caso a instrução lida tenha que ir na direita da seção de memória, monta a linha e armazena
                 int64_t word = montaLinhaDeInstrucao(opcodeEsquerdo, enderecoEsquerdo, opcodeInt, endereco);
                 armazenaNaMemoria(PC, word, memoria);
-                fprintf(arquivoSaida, "%"PRId64"\n", word);
+                // fprintf(arquivoSaida, "%"PRId64"\n", word);
                 PC++;
                 controle = False;
             }
@@ -651,7 +659,7 @@ int main ()
     dumpDaMemoria(memoria);
     
     free(memoria);
-    fclose(arquivoSaida);
+    // fclose(arquivoSaida);
     fclose(arquivoEntrada);
     return 0;
 }
