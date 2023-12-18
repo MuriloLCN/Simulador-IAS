@@ -10,6 +10,10 @@ typedef enum {False, True} booleano;
 
 int memoria[TAMANHO_MEMORIA] = {0};
 
+// Cabeçalhos de funções
+void printBits(int64_t n);
+void printMemoria(uint8_t* memoria);
+
 int pegaParametroInstrucao(char *instrucao, int index)
 {
     /*
@@ -107,43 +111,85 @@ uint64_t montaLinhaDeInstrucao (int opcode1, int operand1, int opcode2, int oper
     return final;
 }
 
-void armazenaNaMemoria (int posicao, uint64_t num, uint8_t *memoria) //Guarda um valor na memoria - usado como encapsulamento
+void armazenaNaMemoria (int posicao, uint64_t num, uint8_t *memoria)
 {
-    memoria += posicao*5; // posiciona o ponteiro da memórica no local correto da gravação na memória
+    /*
+        Armazena um valor uint64_t na memória
+
+        Entradas:
+            int posicao: A posição da memória a inserir o dado
+            uint64_t num: O valor a ser inserido na memória
+            uint8_t* memoria: A memória para inserir o valor 
+    */
+
+    // Valor de inserção inválido
+    if (posicao < 0 || posicao >= TAMANHO_MEMORIA)
+    {
+        return;
+    }
+
+    memoria += posicao*5;  // Posiciona o ponteiro da memórica no local correto da gravação na memória
     for (int i = 0; i < 5; i++) 
     {
-        memoria[i] = (num >> (i * 8)) & 0xFF; // em cada iteração, é lido 1 dos 5 blocos que compõe uma dada palavra da memória, então é feito
-                                              // um right-shif a fim de posicionar nos 8 bits menos significos de num a respectiva parte que 
-                                              // deseja-se escrever no momento no bloco da memória. Ainda, é feita uma operação de máscara para
-                                              // isolar os 8 bits menos significativos de num (os que serão escritos na memória naquela iteração)
+        /*
+            Em cada iteração, é lido um dos cinco blocos que compões uma dada palavra da memória, então é realizado um
+            deslocamento para a direita a fim de posicionar nos 8 bits menos significativos da variável num a respectiva parte que se
+            deseja escrever no momento para a memória. Ainda, é feita uma operação de máscara para isolar os 8 bits menos significativos de
+            num (i.e, os bits que serão escritos na memória naquela iteração)
+        */
+        memoria[i] = (num >> (i * 8)) & 0xFF;
     }
 }
 
 uint64_t buscaNaMemoria (uint8_t *memoria, int posicao)
 {
-    uint64_t num = 0; // inicia o valor inteiro com 0
-    memoria += posicao*5; // calcula a posição que o ponteiro de leitura deve ficar na memória
-    for (int i = 0; i < 5; i++) // temos 5 iterações, uma para cada "bloco" de 8 bits, essa é a menor unidade que podemos ler de forma eficiente
-    {
-        num |= ((uint64_t)memoria[i] << (i * 8)); // a cada iteração, é lido 1 dos 5 blocos que compõe uma palavra da memória,
-                                                 // de modo que, concomitantemente, também é feito o left-shift para posicionar
-                                                 // cada um dos "blocos" lidos em seu devido lugar no número final (num)
-    }
-    memoria -= posicao*5; // devolve a memória com o ponteiro posicionado na mesma posição que recebeu
+    /*
+        Busca um valor armazenado na memória a partir de sua posição
+        Entradas:
+            uint8_t* memoria: A memória para buscar o valor
+            int posicao: A posição da memória no qual o valor se encontra
+    */
 
-    if (posicao <= 499) // Se é um valor numérico e não uma instrução
+    if (posicao < 0 || posicao >= TAMANHO_MEMORIA)
     {
-        if (((num & 549755813888) >> 39) == 1) // Se é negativo
+        return 0;
+    }
+
+    uint64_t num = 0; 
+
+    memoria += posicao*5; // Posição que o ponteiro de leitura deve ficar na memória
+
+    for (int i = 0; i < 5; i++) // 5 "blocos" de 8 bits - a maior unidade que pode ser lida de forma eficiente
+    {
+        /*
+            A cada iteração, é lido um dos cinco blocos que compões uma palavra da memória e, simultaneamente, é feito
+            um deslocamento para a esquerda para posicionar cada bloco em seu local final
+        */
+        num |= ((uint64_t)memoria[i] << (i * 8));
+    }
+    memoria -= posicao*5;  // Devolve a memória com o ponteiro posicionado na mesma posição que recebeu
+
+    if (posicao <= 499)  // Se é um valor numérico e não uma instrução
+    {
+        if (((num & 549755813888) >> 39) == 1)  // Se é negativo
         {
-            num = num & 549755813887; // Tira o primeiro bit
+            num = num & 549755813887;  // Tira o primeiro bit
             num *= -1;
         }
     }
     return num;
 }
 
+// A rever
 void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, FILE *arquivoSaida)
 {
+    /*
+        Carrega as 500 primeiras linhas do arquivo de entrada (i.e, que contém dados) para a memória
+
+        Entradas:
+            FILE* arquivoEntrada: O descritor do arquivo de entrada
+            uint8_t* memoria: A memória para armazenar os dados lidos
+    */
     char linha [30];
     uint64_t numero_convertido;
     rewind(arquivoSaida);
@@ -165,7 +211,7 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, FILE *arquivoSaida)
 
 void dumpDaMemoria(uint8_t *memoria) {
     /*
-        Realiza um dump de todo o conteúdo da memória em um arquivo output.txt
+        Realiza um dump de todo o conteúdo da memória em um arquivo saida.txt
     */
     FILE *outFile;
     uint64_t palavra;
@@ -458,11 +504,61 @@ void converteInstrucao(char* instrucao, char* opcode, int* endereco)
     }
 }
 
-void completaMemoria (int PC, uint8_t *memoria) // completa a memórica com o valor 0
+void completaMemoria (int PC, uint8_t *memoria)
 {
+    /*
+        Preenche a memória a partir de um dado ponto com o valor zero
+
+        Entradas:
+            int PC: O valor a partir do qual a memória será preenchido com zeros
+            uint8_t* memoria: A memória a ser preenchida com zeros
+    */
     for (int i = PC; i < 4095; i++)
     {
         armazenaNaMemoria(i, 0, memoria);
+    }
+}
+
+void printBits(int64_t n)
+{
+    /*
+        Imprime os últimos 40 bits de um valor int64_t como uma string de 0's e 1's
+        Entradas:
+            int64_t n: Um valor de entrada a ser impresso
+    */
+
+    char str[41];
+    for (int i = 39; i >= 0; i--)
+    {
+        if (n % 2 == 0)
+        {
+            str[i] = '0';
+        }
+        else
+        {
+            str[i] = '1';
+        }
+        n = n/2;
+    }
+    str[40] = '\0';
+    printf("%s", str);
+}
+
+void printMemoria(uint8_t* memoria)
+{
+    /*
+        Imprime o estado atual da memória na saída padrão
+        Entrada:
+            uint64_t* memoria: A memória simulada que será impressa
+    */
+   
+    int64_t palavra;
+
+    for (int i = 0; i < 4095; i++)
+    {
+        palavra = buscaNaMemoria(memoria, i);
+        printf("%d: ", i);
+        printBits(palavra);
     }
 }
 
@@ -475,6 +571,7 @@ int main ()
     char instrucao[100], opcode[6], operand[6];
 
     uint8_t *memoria = (uint8_t *) malloc (4096*40);
+    completaMemoria(0, memoria);
 
     FILE *arquivoEntrada, *arquivoSaida;
     arquivoEntrada = fopen("instructions.txt", "r");
@@ -550,8 +647,6 @@ int main ()
         }
     }
     
-    completaMemoria(PC, memoria);
-
     dumpDaMemoria(memoria);
     
     free(memoria);
