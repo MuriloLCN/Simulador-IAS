@@ -4,11 +4,7 @@
 #include <math.h>
 #include <inttypes.h>
 
-#define TAMANHO_MEMORIA 4096
-
 typedef enum {False, True} booleano;
-
-int memoria[TAMANHO_MEMORIA] = {0};
 
 // Cabeçalhos de funções
 void printBits(int64_t n);
