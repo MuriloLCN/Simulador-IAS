@@ -200,32 +200,87 @@ int64_t converteDado(uint64_t entrada)
     return magnitude;
 }
 
-void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria) // FILE *arquivoSaida)
+booleano stringEhNumericaOuNula(char* str)
+{
+    for (int i = 0; i < strlen(str); i++)
+    {
+        switch (str[i])
+        {
+        case '-':
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+        case '\0':
+            break;
+        
+        default:
+            return False;
+        }
+    }
+    return True;
+}
+
+void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria)
 {
     /*
-        Carrega as 500 primeiras linhas do arquivo de entrada (i.e, que contém dados) para a memória
+        Carrega as primeiras linhas do arquivo de entrada (i.e, que contém dados) para a memória
+        Linhas vazias antes da instrução são assumidas como valor zero
 
         Entradas:
             FILE* arquivoEntrada: O descritor do arquivo de entrada
             uint8_t* memoria: A memória para armazenar os dados lidos
     */
-    char linha [30];
+    char linha[30];
     uint64_t numero_convertido;
-    // rewind(arquivoSaida);
     rewind(arquivoEntrada); // para garantir que irá ser lida as 500 primeiras linhas do arquivo de entrada
-    for (int i = 0; i < 500; i++)
+
+    int linhaAtual = 0;
+
+    do
     {
-        fgets(linha, 30, arquivoEntrada); // lê uma linha do arquivo de entrada
-        // fputs(linha, arquivoSaida);
-        if (linha[0] == '-') // se o número lido for negativo
+        fgets(linha, 30, arquivoEntrada);
+
+        if (linha[strlen(linha) - 1] == '\n')
+        {
+            linha[strlen(linha) - 1] = '\0';
+        }
+        if (linha[strlen(linha) - 1] == '\r')
+        {
+            linha[strlen(linha) - 1] = '\0';
+        }
+
+        if (linha[0] == '-')
         {
             numero_convertido = strtoll(linha+1, NULL, 10); // converte a string para inteiro (pulando o caractere -)
             numero_convertido |= 549755813888; // faz com que o bit mais significativo assuma valor 1, indicando que o número é negativo
         }
         else numero_convertido = strtoll(linha, NULL, 10); // converte a string para inteiro
-        // printf("Número lido: %"PRId64" linha%d\n", numero_convertido, i);
-        armazenaNaMemoria(i, numero_convertido, memoria); // grava na memória o dado lido
-    }
+        
+        armazenaNaMemoria(linhaAtual, numero_convertido, memoria); // grava na memória o dado lido
+        linhaAtual += 1;
+
+    } while (stringEhNumericaOuNula(linha));
+    
+    // for (int i = 0; i < 500; i++)
+    // {
+    //     fgets(linha, 30, arquivoEntrada); // lê uma linha do arquivo de entrada
+    //     // fputs(linha, arquivoSaida);
+    //     if (linha[0] == '-') // se o número lido for negativo
+    //     {
+    //         numero_convertido = strtoll(linha+1, NULL, 10); // converte a string para inteiro (pulando o caractere -)
+    //         numero_convertido |= 549755813888; // faz com que o bit mais significativo assuma valor 1, indicando que o número é negativo
+    //     }
+    //     else numero_convertido = strtoll(linha, NULL, 10); // converte a string para inteiro
+    //     // printf("Número lido: %"PRId64" linha%d\n", numero_convertido, i);
+    //     armazenaNaMemoria(i, numero_convertido, memoria); // grava na memória o dado lido
+    // }
 }
 
 void dumpDaMemoria(uint8_t *memoria) {
@@ -611,6 +666,10 @@ void printMemoria(uint8_t* memoria)
 
 int main ()
 {
+    // A FAZER ---------------------------------------------------------------------------------
+    // 1. Receber argumentos "./programa -p ENTRADA.ias -m SAIDA.ias.m
+    // 2. Pegar nomes dos arquivos de entrada e saída (caso não sejam ditos devem ser algum nome padrão)
+
     /*
         Ponto de entrada principal do programa
     */
@@ -653,8 +712,6 @@ int main ()
         {
             instrucao[strlen(instrucao) - 1] = '\0';
         }
-
-        // A fazer: leitura **integral** das 500 primeiras linhas aqui
 
         converteInstrucao(instrucao, opcodeString, &endereco);
 
