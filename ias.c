@@ -283,7 +283,7 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria)
     // }
 }
 
-void dumpDaMemoria(uint8_t *memoria) {
+void dumpDaMemoria(uint8_t *memoria, char nome_arq_saida[]) {
     /*
         Realiza um dump de todo o conteúdo da memória em um arquivo saida.txt e sua representação binária em saida_binario.txt
     */
@@ -293,7 +293,7 @@ void dumpDaMemoria(uint8_t *memoria) {
     uint64_t palavra;
     int64_t dado;
 
-    saida = fopen("saida.txt", "w");
+    saida = fopen(nome_arq_saida, "w");
     saidaBinaria = fopen("saida_binario.txt", "w");
 
     for (int i = 0; i < 4095; i++)
@@ -664,7 +664,7 @@ void printMemoria(uint8_t* memoria)
     }
 }
 
-int main ()
+int main (int argc, char *argv[])
 {
     // A FAZER ---------------------------------------------------------------------------------
     // 1. Receber argumentos "./programa -p ENTRADA.ias -m SAIDA.ias.m
@@ -674,87 +674,96 @@ int main ()
         Ponto de entrada principal do programa
     */
 
-    char instrucao[100], opcode[6], operand[6];
-
-    uint8_t *memoria = (uint8_t *) malloc (4096*40);
-    completaMemoria(0, memoria);
-
-    FILE *arquivoEntrada; // *arquivoSaida;
-    arquivoEntrada = fopen("instructions.txt", "r");
-    // arquivoSaida = fopen("out.txt", "w");
-
-    int linhaAtualDeLeitura = 0;
-
-    // Usados para o controle durante a junção de duas instruções que devem ir na mesma linha
-    int opcodeEsquerdo, enderecoEsquerdo;
-    booleano controle = False;
-
-    carregaDados(arquivoEntrada, memoria); // arquivoSaida);
-
-    int PC = 500; // as posições de 0 até a 499 já foram lidas
-    
-    // Lê linha a linha do arquivo de entrada
-    while(fgets(instrucao, 100, arquivoEntrada) != NULL)
+    if (argc == 5 && !strcmp(argv[1], "-p") && !strcmp(argv[3], "-m")) 
     {
-        linhaAtualDeLeitura++;
+        char instrucao[100], opcode[6], operand[6];
 
-        char opcodeString[8];
-        int endereco;
-        uint64_t valor;  // Caso o endereço corresponda a um número
+        uint8_t *memoria = (uint8_t *) malloc (4096*40);
+        completaMemoria(0, memoria);
 
+        FILE *arquivoEntrada; // *arquivoSaida;
+        arquivoEntrada = fopen(argv[2], "r");
+        // arquivoSaida = fopen("out.txt", "w");
+		if (arquivoEntrada == NULL) // caso ocorra alguma falha na abertura do arquivo de entrada
+		{
+			printf("Falha ao abrir o arquivo de entrada!\n");
+			return 1;
+		}
+        int linhaAtualDeLeitura = 0;
 
-        // Removendo possíveis \n ou \n\r no final de cada linha
-        if (instrucao[strlen(instrucao) - 1] == '\n')
-        {
-            instrucao[strlen(instrucao) - 1] = '\0';
-        }
-        if (instrucao[strlen(instrucao) - 1] == '\r')
-        {
-            instrucao[strlen(instrucao) - 1] = '\0';
-        }
+        // Usados para o controle durante a junção de duas instruções que devem ir na mesma linha
+        int opcodeEsquerdo, enderecoEsquerdo;
+        booleano controle = False;
 
-        converteInstrucao(instrucao, opcodeString, &endereco);
+        carregaDados(arquivoEntrada, memoria); // arquivoSaida);
 
-        int opcodeInt = stringParaInt(opcodeString);
-
-        //armazenaNaMemoria(endereco, opcode);
-
-        // printf("\nOpcode: %s endereco: %d instrucao: \"%s\"", opcodeString, endereco, instrucao);
-
-        if (opcodeInt == 255 && controle == False) // se leu a última instrução e não há instrução da direita
-        {
-            uint64_t word = montaLinhaDeInstrucao(opcodeInt, endereco, 0, 0);
-            armazenaNaMemoria(PC, word, memoria);
-            // fprintf(arquivoSaida, "%"PRId64"\n", word);
-            PC++;
-            break;
-        }
+        int PC = 500; // as posições de 0 até a 499 já foram lidas
         
-        else 
+        // Lê linha a linha do arquivo de entrada
+        while(fgets(instrucao, 100, arquivoEntrada) != NULL)
         {
-            if (!controle)
+            linhaAtualDeLeitura++;
+
+            char opcodeString[8];
+            int endereco;
+            uint64_t valor;  // Caso o endereço corresponda a um número
+
+
+            // Removendo possíveis \n ou \n\r no final de cada linha
+            if (instrucao[strlen(instrucao) - 1] == '\n')
             {
-                // Caso a instrução lida tenha que ir na esquerda da seção de memória
-                opcodeEsquerdo = opcodeInt;
-                enderecoEsquerdo = endereco;
-                controle = True;
+                instrucao[strlen(instrucao) - 1] = '\0';
             }
-            else
+            if (instrucao[strlen(instrucao) - 1] == '\r')
             {
-                // Caso a instrução lida tenha que ir na direita da seção de memória, monta a linha e armazena
-                int64_t word = montaLinhaDeInstrucao(opcodeEsquerdo, enderecoEsquerdo, opcodeInt, endereco);
+                instrucao[strlen(instrucao) - 1] = '\0';
+            }
+
+            converteInstrucao(instrucao, opcodeString, &endereco);
+
+            int opcodeInt = stringParaInt(opcodeString);
+
+            //armazenaNaMemoria(endereco, opcode);
+
+            // printf("\nOpcode: %s endereco: %d instrucao: \"%s\"", opcodeString, endereco, instrucao);
+
+            if (opcodeInt == 255 && controle == False) // se leu a última instrução e não há instrução da direita
+            {
+                uint64_t word = montaLinhaDeInstrucao(opcodeInt, endereco, 0, 0);
                 armazenaNaMemoria(PC, word, memoria);
                 // fprintf(arquivoSaida, "%"PRId64"\n", word);
                 PC++;
-                controle = False;
+                break;
+            }
+            
+            else 
+            {
+                if (!controle)
+                {
+                    // Caso a instrução lida tenha que ir na esquerda da seção de memória
+                    opcodeEsquerdo = opcodeInt;
+                    enderecoEsquerdo = endereco;
+                    controle = True;
+                }
+                else
+                {
+                    // Caso a instrução lida tenha que ir na direita da seção de memória, monta a linha e armazena
+                    int64_t word = montaLinhaDeInstrucao(opcodeEsquerdo, enderecoEsquerdo, opcodeInt, endereco);
+                    armazenaNaMemoria(PC, word, memoria);
+                    // fprintf(arquivoSaida, "%"PRId64"\n", word);
+                    PC++;
+                    controle = False;
+                }
             }
         }
+        
+        printf("\nsaida: %s\n",argv[4]);
+        dumpDaMemoria(memoria, argv[4]);
+        
+        free(memoria);
+        // fclose(arquivoSaida);
+        fclose(arquivoEntrada);
+        return 0;
     }
-    
-    dumpDaMemoria(memoria);
-    
-    free(memoria);
-    // fclose(arquivoSaida);
-    fclose(arquivoEntrada);
-    return 0;
+
 }
