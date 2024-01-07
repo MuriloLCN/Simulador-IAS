@@ -373,6 +373,12 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria)
         linhaAtual += 1;
 
     } while (stringEhNumericaOuNula(linha));
+
+    /*
+        Como o algoritmo tem que ler a linha para saber se é um dado numérico/nulo, o laço acaba sendo finalizado na linha em que a condição é quebrada
+        com isso, é necessário retroceder (com o descritor do arquivo de entrada) para a posição de leitura antes da última linha ser processada
+    */
+    fseek(arquivoEntrada, -(strlen(linha)+1), SEEK_CUR);
 }
 
 void dumpDaMemoria(uint8_t *memoria, char nome_arq_saida[]) 
