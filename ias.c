@@ -395,10 +395,11 @@ void dumpDaMemoria(uint8_t *memoria, char nome_arq_saida[])
     saida = fopen(nome_arq_saida, "w");
     saidaBinaria = fopen("saida_binario.txt", "w");
 
-    for (int i = 0; i < 4095; i++)
+    for (int i = 0; i < 4096; i++)
     {
         palavra = buscaNaMemoria(memoria, i);
-
+        fprintf(saida, "%"PRId64"\n", palavra);
+        /*
         if (i <= 499)
         {
             dado = converteDado(palavra);
@@ -407,6 +408,7 @@ void dumpDaMemoria(uint8_t *memoria, char nome_arq_saida[])
         else {
             fprintf(saida, "%"PRId64"\n", palavra);
         }
+        */
         char str[41];
         for (int i = 39; i >= 0; i--)
         {
