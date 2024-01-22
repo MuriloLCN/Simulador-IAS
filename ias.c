@@ -12,6 +12,7 @@
 #include <string.h>
 #include <math.h>
 #include <inttypes.h>
+#include "ias.h"
 
 #define TAMANHO_MEMORIA 4096
 
@@ -35,92 +36,76 @@ void converteInstrucao(char* instrucao, char* opcode, int* endereco);
 void completaMemoria (int PC, uint8_t *memoria);
 // *******************************************************************
 
-int main (int argc, char *argv[])
+void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria)
 {
-    if (argc == 5 && !strcmp(argv[1], "-p") && !strcmp(argv[3], "-m")) 
-    {
-        char instrucao[100], opcode[6], operand[6];
+    // Carrega o arquivo de entrada para a memória
+    
+    char instrucao[100], opcode[6], operand[6];
 
-        uint8_t *memoria = (uint8_t *) malloc (4096*40);
-        completaMemoria(0, memoria);
+    completaMemoria(0, *memoria);
 
-        FILE *arquivoEntrada; // arquivo de entrada, cujo nome foi especificado pelo usuário após o parâmetro -p
-        arquivoEntrada = fopen(argv[2], "r");
+    int linhaAtualDeLeitura = 0;
 
-		if (arquivoEntrada == NULL) // caso ocorra alguma falha na abertura do arquivo de entrada
-		{
-			printf("Falha ao abrir o arquivo de entrada!\n");
-			return 1;
-		}
-        int linhaAtualDeLeitura = 0;
+    // Usados para o controle durante a junção de duas instruções que devem ir na mesma linha
+    int opcodeEsquerdo, enderecoEsquerdo;
+    booleano controle = False;
 
-        // Usados para o controle durante a junção de duas instruções que devem ir na mesma linha
-        int opcodeEsquerdo, enderecoEsquerdo;
-        booleano controle = False;
+    carregaDados(arquivoEntrada, *memoria); // carrega os dados presentes no arquivo de entrada para a memória do IAS;
 
-        carregaDados(arquivoEntrada, memoria); // carrega os dados presentes no arquivo de entrada para a memória do IAS;
-
-        int PC = 500; // as posições de 0 até a 499 já foram lidas
+    int PC = 500; // as posições de 0 até a 499 já foram lidas
         
-        // Lê linha a linha do arquivo de entrada
-        while(fgets(instrucao, 100, arquivoEntrada) != NULL)
+    // Lê linha a linha do arquivo de entrada
+    while(fgets(instrucao, 100, arquivoEntrada) != NULL)
+    {
+        linhaAtualDeLeitura++;
+
+        char opcodeString[8];
+        int endereco;
+        uint64_t valor;  // Caso o endereço corresponda a um número
+
+
+        // Removendo possíveis \n ou \n\r no final de cada linha
+        if (instrucao[strlen(instrucao) - 1] == '\n')
         {
-            linhaAtualDeLeitura++;
+            instrucao[strlen(instrucao) - 1] = '\0';
+        }
+        if (instrucao[strlen(instrucao) - 1] == '\r')
+        {
+            instrucao[strlen(instrucao) - 1] = '\0';
+        }
 
-            char opcodeString[8];
-            int endereco;
-            uint64_t valor;  // Caso o endereço corresponda a um número
+        // dada a linha de instrução, é devolvida a string que representa o opcode e o local da memória onde será realizado aquela operação
+        converteInstrucao(instrucao, opcodeString, &endereco); 
 
+        int opcodeInt = stringParaInt(opcodeString);
 
-            // Removendo possíveis \n ou \n\r no final de cada linha
-            if (instrucao[strlen(instrucao) - 1] == '\n')
-            {
-                instrucao[strlen(instrucao) - 1] = '\0';
-            }
-            if (instrucao[strlen(instrucao) - 1] == '\r')
-            {
-                instrucao[strlen(instrucao) - 1] = '\0';
-            }
-
-            // dada a linha de instrução, é devolvida a string que representa o opcode e o local da memória onde será realizado aquela operação
-            converteInstrucao(instrucao, opcodeString, &endereco); 
-
-            int opcodeInt = stringParaInt(opcodeString);
-
-            if (opcodeInt == 255 && controle == False) // se leu a última instrução e não há instrução da direita (número de instruções ímpar)
-            {
-                uint64_t word = montaLinhaDeInstrucao(opcodeInt, endereco, 0, 0);
-                armazenaNaMemoria(PC, word, memoria);
-                PC++;
-                break;
-            }
-            
-            else 
-            {
-                if (!controle)
-                {
-                    // Caso a instrução lida tenha que ir na esquerda da seção de memória
-                    opcodeEsquerdo = opcodeInt;
-                    enderecoEsquerdo = endereco;
-                    controle = True;
-                }
-                else
-                {
-                    // Caso a instrução lida tenha que ir na direita da seção de memória, monta a linha e armazena
-                    int64_t word = montaLinhaDeInstrucao(opcodeEsquerdo, enderecoEsquerdo, opcodeInt, endereco);
-                    armazenaNaMemoria(PC, word, memoria);
-                    // fprintf(arquivoSaida, "%"PRId64"\n", word);
-                    PC++;
-                    controle = False;
-                }
-            }
+        if (opcodeInt == 255 && controle == False) // se leu a última instrução e não há instrução da direita (número de instruções ímpar)
+        {
+            uint64_t word = montaLinhaDeInstrucao(opcodeInt, endereco, 0, 0);
+            armazenaNaMemoria(PC, word, *memoria);
+            PC++;
+            break;
         }
         
-        dumpDaMemoria(memoria, argv[4]);
-        
-        free(memoria);
-        fclose(arquivoEntrada);
-        return 0;
+        else 
+        {
+            if (!controle)
+            {
+                // Caso a instrução lida tenha que ir na esquerda da seção de memória
+                opcodeEsquerdo = opcodeInt;
+                enderecoEsquerdo = endereco;
+                controle = True;
+            }
+            else
+            {
+                // Caso a instrução lida tenha que ir na direita da seção de memória, monta a linha e armazena
+                int64_t word = montaLinhaDeInstrucao(opcodeEsquerdo, enderecoEsquerdo, opcodeInt, endereco);
+                armazenaNaMemoria(PC, word, *memoria);
+                // fprintf(arquivoSaida, "%"PRId64"\n", word);
+                PC++;
+                controle = False;
+            }
+        }
     }
 }
 
