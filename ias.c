@@ -380,7 +380,7 @@ void dumpDaMemoria(uint8_t *memoria, char nome_arq_saida[])
     saida = fopen(nome_arq_saida, "w");
     saidaBinaria = fopen("saida_binario.txt", "w");
 
-    for (int i = 0; i < 4096; i++)
+    for (int i = 0; i < TAMANHO_MEMORIA; i++)
     {
         palavra = buscaNaMemoria(memoria, i);
         fprintf(saida, "%"PRId64"\n", palavra);
