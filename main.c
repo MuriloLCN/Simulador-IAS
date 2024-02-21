@@ -194,39 +194,17 @@ ULA unidadeLogicaAritmetica;
 BarramentoMemoria barramento;
 
 // Contadores de clock para que seja simulado o pipeline
-//int contadorClockEscritaResultado = 1;
 int contadorClockExecucao = 1;
-// int contadorBuscaOperandos = 1;
-// int contadorDecodificacao = 1;
-// int contadorBusca = 1;
-
-// Indicam se os estágios podem receber os dados anteriores
-booleano flagPipelineVazio[] = {True, True, True, True, True};
 
 // Indicam se os dados anteriores podem ser lidos e executados
 booleano flagBuscarDadoAnterior[] = {True, True, True, True};
+booleano flagEstagioCongelado[] = {False, False, False, False};
 
 // Vira true toda vez que é feito uma escrita
 booleano dependenciaRAW = False;
 
 // Indica o endereço que foi feita a escrita
 int enderecoRAW = 0;
-
-// Assume que a gente criou algumas variáveis [A],[B],...,[G], e também algumas variáveis que indicam
-// se o estágio tá congelado ou não
-
-// Antes de realizar cada etapa, primeiro faz o seguinte:
-// se o estágio tá congelado, não faz nada
-// se não está congelado:
-// === se não for execução:
-// ====== roda o estágio e continua
-// === se for execução:
-// ====== vê se o contador chegou a 1:
-// ========= se sim, executa a instrução e descongela
-// ========= se não, diminui 1 do contador e congela todos os anteriores
-
-// Tem que lembrar que, depois que a execução terminar, os estágios anteriores continuam congelados por mais um
-// ciclo, pq tem que escrever os resultados primeiro (dependência RAW)
 
 Lado ladoInstrucao = Esquerdo;
 
@@ -281,56 +259,136 @@ void pipelineBuscaOperandos()
     // 
 }
 
+// B | D | Bo | Ex | Er
+
 booleano flagPegarNovoContador = False;
+
+// Instrução que será executada
+Instrucao operacaoASerExecutada;
+
+// Dado para ser executado
+// Em operações LOAD e STOR, representa o endereço de memória a ser acessado
+uint64_t dadoParaExecucao;
 
 void pipelineExecucao()
 {
+    // Se a instrução antiga acabou, pegue a quantidade de ciclos de clock para a instrução atual
     if (flagPegarNovoContador == True)
     {
-        // contador clock = quantidade de ciclos de clock daquela instrucao
+        // contador clock = quantidade de ciclos de clock daquela instrucao [D]
         flagPegarNovoContador = False;
     }
+    // Se a instrução precisa esperar ser feita
     if (contadorClockExecucao > 1)
     {
         contadorClockExecucao -= 1;
+
         // Para que a escrita de resultados não escreva dados antigos
         flagBuscarDadoAnterior[3] = False;
+
+        // Para que não ocorra a busca de operandos
+        flagBuscarDadoAnterior[1] = False;
+
         return;
     }
 
+    instrucao = operacaoASerExecutada;
     flagPegarNovoContador = True;
-    // Lê o enum de [D] e o dado de [E], e faz a execução dependendo do tipo de instrução
-    // Armazena o resultado em [F]
-    // Armazena a instrução em [G]
 
-    // resultado
-    // switch [D]
-    //    faz cada tipo de operacao e arnazena no lugar correspondente
+    // Liberando o pipeline
+    flagBuscarDadoAnterior[1] = True;
+    flagBuscarDadoAnterior[3] = True;
 
-    // load MQ : Nada
-    // load MQ,MX : Resultado <- [MX]
-    // stor MX: Guarda resultado na memória
-    // load M(X) (e variacoes): Resultado <- [MX]
+    switch (operacaoASerExecutada)
+    {
+    case ADD_MX:
+        bancoRegistradores.AC += dadoParaExecucao;
+        break;
+    case ADD_ABSMX:
+        bancoRegistradores.AC += abs(dadoParaExecucao);
+        break;
+    case SUB_MX:
+        bancoRegistradores.AC -= dadoParaExecucao;
+        break;
+    case SUB_ABSMX:
+        bancoRegistradores.AC -= abs(dadoParaExecucao);
+        break;
+    case JUMPMais_DIR:
+        if (bancoRegistradores.AC < 0)
+        {
+            break;
+        }
+    case JUMP_DIR:
+        // PC <- (int) dado para execucao
+        // limpar pipeline
+        // lado = dir
+        break;
+    case JUMPMais_ESQ:
+        if (bancoRegistradores.AC < 0)
+        {
+            break;
+        }
+    case JUMP_ESQ:
+        // PC <- (int) dado para execucao
+        // limpar pipeline
+        // lado = dir
+        break;
+    case RSH:
+        resultado = bancoRegistradores.AC / 2;
+        break;
+    case LSH:
+        resultado = bancoRegistradores.AC * 2;
+        break;
+    case DIV_MX:
+        uint64_t res = bancoRegistradores.AC / dadoParaExecucao;
+        resultado = 0; // PARTE 1 VAI AQUI
+        resultado_auxiliar = 0; // PARTE 2 VAI AQUI
+        break;
+    case MUL_MX:
+        uint64_t res = dadoParaExecucao * bancoRegistradores.MQ;
+        resultado = 0; // PARTE 1 VAI AQUI
+        resultado_auxiliar = 0; // PARTE 2 VAI AQUI
+        break;
+    case LOAD_ABSMX:
+        resultado = abs(dadoParaExecucao);
+        break;
+    case LOAD_MenosABSMX:
+        resultado = -1 * abs(dadoParaExecucao);
+        break;
+    case LOAD_MenosMX:
+        resultado = -1 * dadoParaExecucao;
+        break;
+    case LOAD_MQ_MX:
+    case LOAD_MX:
+        resultado = dadoParaExecucao;
+        break;
+    case STOR_MX:
+        barramento.endereco = dadoParaExecucao;
+        barramento.operacao = escrever;
+        barramento.entrada = bancoRegistradores.AC;
+        executarBarramento();
+        break;
+        resultado = dadoParaExecucao;
+        break;
+    case STOR_MX_ESQ:
+        // pegar dado da memória no lugar 
+        // alterar apenas os bits sem ser do opcode
+        // guardar novamente na memória
+        break;
+    case STOR_MX_DIR:
+        // pegar dado da memória no lugar
+        // alterar apenas os bits sem ser do opcode
+        // guardar novamente na memória
+    case EXIT:
+        system("EXIT");
+        break;
+    case NENHUMA:
+    case LOAD_MQ:
+    default:
+        break;
+    }
 
-    // jump:
-    //      pc <- valor
-    //      lado <- direito ou esquerdo
-    //      limpar o pipeline
 
-    // jump+:
-    //      se o pulo for tomado:
-    //          faz que nem um jump normal
-    //      se não foi tomado, continua
-
-    // add e sub:
-    //      resultado <- resultado da operacao
-
-    // mul e div:
-    //      colocar partes dos dados de AC em resultado
-    //      colocar partes dos dados de MQ em resultado_auxiliar
-    
-    // lsh e rsh:
-    //      resultado <- resultado da operacao
 }  
 
 uint64_t resultado;
@@ -347,8 +405,11 @@ void pipelineEscritaResultados()
 
     switch (instrucao)
     {
+        // Essa instrução faz AC <- MQ
         case LOAD_MQ:
             bancoRegistradores.AC = bancoRegistradores.MQ;
+            break;
+        // Essas instruções fazem MQ <- res
         case LOAD_MQ_MX:
         case ADD_MX:
         case ADD_ABSMX:
@@ -356,10 +417,13 @@ void pipelineEscritaResultados()
         case SUB_ABSMX:
             bancoRegistradores.MQ = resultado;
             break;
+        // Essas instruções fazem MQ <- res_aux e AC <- res
         case MUL_MX:
         case DIV_MX:
             bancoRegistradores.AC = resultado;
             bancoRegistradores.MQ = resultado_auxiliar;
+            break;
+        // Essas instruções fazem AC <- res
         case LOAD_MX:
         case LOAD_MenosMX:
         case LOAD_ABSMX:
@@ -367,7 +431,8 @@ void pipelineEscritaResultados()
         case LSH:
         case RSH:
             bancoRegistradores.AC = resultado;
-
+            break;
+        // Essas instruções não fazem nada
         case STOR_MX:
         case STOR_MX_DIR:
         case STOR_MX_ESQ:
@@ -378,12 +443,6 @@ void pipelineEscritaResultados()
         default:
             break;
         }
-
-    // Como esse estágio leva só 1 ciclo de clock, não é necessário contador
-    // Lê o dado a ser armazenado de [F] e a instrução de [G]
-    // escreve o resultado na memória dependendo do tipo de instrução
-    // STOR e LOAD meio que não precisam dessa parte, pq são feitos na execução
-    // como outras instruções escrevem no AC ou no MQ, não precisamos dos endereços de memória
 }
 
 void executarBarramento()
