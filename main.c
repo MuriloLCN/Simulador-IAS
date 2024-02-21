@@ -8,6 +8,8 @@
 
 #define TAMANHO_MEMORIA 4096
 
+uint8_t* memoria;
+
 typedef enum {False, True} booleano;
 
 typedef enum {
@@ -18,6 +20,18 @@ typedef enum {
     shiftParaEsquerda,
     shiftParaDireita
 } OperacaoULA;
+
+typedef enum {
+    ler,
+    escrever
+} OperacaoBarramento;
+
+typedef struct {
+    int endereco;
+    OperacaoBarramento operacao;
+    uint64_t entrada;
+    uint64_t saida;
+} BarramentoMemoria;
 
 typedef struct {
     uint64_t entrada1;
@@ -48,8 +62,14 @@ typedef enum {
   RSH,
   STOR_MX_ESQ,
   STOR_MX_DIR,
-  EXIT
+  EXIT,
+  NENHUMA
 } Instrucao;
+
+typedef enum {
+    Esquerdo,
+    Direito
+} Lado;
 
 typedef struct {
     uint64_t AC;
@@ -168,16 +188,29 @@ Instrucao opCodeParaInstrucao(uint64_t opCode)
     }
 }
 
-uint8_t* memoria;
+
 BR bancoRegistradores;
 ULA unidadeLogicaAritmetica;
+BarramentoMemoria barramento;
 
 // Contadores de clock para que seja simulado o pipeline
-int contadorClockEscritaResultado = 1;
+//int contadorClockEscritaResultado = 1;
 int contadorClockExecucao = 1;
-int contadorBuscaOperandos = 1;
-int contadorDecodificacao = 1;
-int contadorBusca = 1;
+// int contadorBuscaOperandos = 1;
+// int contadorDecodificacao = 1;
+// int contadorBusca = 1;
+
+// Indicam se os estágios podem receber os dados anteriores
+booleano flagPipelineVazio[] = {True, True, True, True, True};
+
+// Indicam se os dados anteriores podem ser lidos e executados
+booleano flagBuscarDadoAnterior[] = {True, True, True, True};
+
+// Vira true toda vez que é feito uma escrita
+booleano dependenciaRAW = False;
+
+// Indica o endereço que foi feita a escrita
+int enderecoRAW = 0;
 
 // Assume que a gente criou algumas variáveis [A],[B],...,[G], e também algumas variáveis que indicam
 // se o estágio tá congelado ou não
@@ -195,14 +228,39 @@ int contadorBusca = 1;
 // Tem que lembrar que, depois que a execução terminar, os estágios anteriores continuam congelados por mais um
 // ciclo, pq tem que escrever os resultados primeiro (dependência RAW)
 
+Lado ladoInstrucao = Esquerdo;
+
 void pipelineBusca()
 {
     // Lê o lugar de memória dito por PC (lembrando que pode ser esquerdo ou direito tbm)
     // e guarda o OpCode + dado em um lugar [A]
+
+
+    // OBS: O MBR, IR e IBR aqui são só para decoração. O IAS não funciona com pipeline.
+    // a gente usa ladoInstrucao e busca toda vez. Isso é só pra fazer parecer que a gente tá fazendo algo.
+
+    // Busca o endereço de PC na memória
+
+    // se  lado==esquerdo:
+    //     salva o lado direito em MBR
+    //     divide o lado esquerdo em IR e IBR
+    //     marca flag como "direito"
+    // senão:
+    //     salva o lado direito em IR e IBR
+    //     marca flag como "esquerdo"
 }
+
+uint64_t resultadoBusca;  // [A]
 
 void pipelineDecodificacao()
 {
+    // Opcode <- Opcode de (resultadobusca)
+    // endereco <- Dado de (resultado busca)
+    // enum operacao op <- opCodeParaInstrucao(Opcode)
+    
+    // [B] <- op
+    // [C] <- endereco
+
     // Lê o opcode e o dado do lugar [A]
     // Armazena a instrução (já em forma enum) em [B]
     // Armazena o endereço do operando em [C]
@@ -213,20 +271,132 @@ void pipelineBuscaOperandos()
     // Lê o endereço do operando de [C] e busca ele na memória
     // Copia a instrução de [B] para [D]
     // Armazena o dado em [E]
+
+    // se for uma operacao normal
+    //  dado <- buscaNaMemoria([C])
+    // se for um stor
+    //  dado <- [C]
+    // [D] <- [B]
+    // [E] <- Dado
+    // 
 }
+
+booleano flagPegarNovoContador = False;
 
 void pipelineExecucao()
 {
+    if (flagPegarNovoContador == True)
+    {
+        // contador clock = quantidade de ciclos de clock daquela instrucao
+        flagPegarNovoContador = False;
+    }
+    if (contadorClockExecucao > 1)
+    {
+        contadorClockExecucao -= 1;
+        // Para que a escrita de resultados não escreva dados antigos
+        flagBuscarDadoAnterior[3] = False;
+        return;
+    }
+
+    flagPegarNovoContador = True;
     // Lê o enum de [D] e o dado de [E], e faz a execução dependendo do tipo de instrução
     // Armazena o resultado em [F]
     // Armazena a instrução em [G]
-}
+
+    // resultado
+    // switch [D]
+    //    faz cada tipo de operacao e arnazena no lugar correspondente
+
+    // load MQ : Nada
+    // load MQ,MX : Resultado <- [MX]
+    // stor MX: Guarda resultado na memória
+    // load M(X) (e variacoes): Resultado <- [MX]
+
+    // jump:
+    //      pc <- valor
+    //      lado <- direito ou esquerdo
+    //      limpar o pipeline
+
+    // jump+:
+    //      se o pulo for tomado:
+    //          faz que nem um jump normal
+    //      se não foi tomado, continua
+
+    // add e sub:
+    //      resultado <- resultado da operacao
+
+    // mul e div:
+    //      colocar partes dos dados de AC em resultado
+    //      colocar partes dos dados de MQ em resultado_auxiliar
+    
+    // lsh e rsh:
+    //      resultado <- resultado da operacao
+}  
+
+uint64_t resultado;
+uint64_t resultado_auxiliar;
+Instrucao instrucao;
 
 void pipelineEscritaResultados()
 {
+    // Se o dado anterior não estiver pronto, saia
+    if (flagBuscarDadoAnterior[3] == False)
+    {
+        return;
+    }
+
+    switch (instrucao)
+    {
+        case LOAD_MQ:
+            bancoRegistradores.AC = bancoRegistradores.MQ;
+        case LOAD_MQ_MX:
+        case ADD_MX:
+        case ADD_ABSMX:
+        case SUB_MX:
+        case SUB_ABSMX:
+            bancoRegistradores.MQ = resultado;
+            break;
+        case MUL_MX:
+        case DIV_MX:
+            bancoRegistradores.AC = resultado;
+            bancoRegistradores.MQ = resultado_auxiliar;
+        case LOAD_MX:
+        case LOAD_MenosMX:
+        case LOAD_ABSMX:
+        case LOAD_MenosABSMX:
+        case LSH:
+        case RSH:
+            bancoRegistradores.AC = resultado;
+
+        case STOR_MX:
+        case STOR_MX_DIR:
+        case STOR_MX_ESQ:
+        case JUMP_DIR:
+        case JUMP_ESQ:
+        case JUMPMais_DIR:
+        case JUMPMais_ESQ:
+        default:
+            break;
+        }
+
+    // Como esse estágio leva só 1 ciclo de clock, não é necessário contador
     // Lê o dado a ser armazenado de [F] e a instrução de [G]
     // escreve o resultado na memória dependendo do tipo de instrução
-    // STOR e LOAD meio que não precisam dessa parte
+    // STOR e LOAD meio que não precisam dessa parte, pq são feitos na execução
+    // como outras instruções escrevem no AC ou no MQ, não precisamos dos endereços de memória
+}
+
+void executarBarramento()
+{
+    if (barramento.operacao == ler)
+    {
+        uint64_t res = buscaNaMemoria(memoria, barramento.endereco);
+        barramento.saida = res;
+    }
+    else 
+    {
+        armazenaNaMemoria(barramento.endereco, barramento.entrada, memoria);
+    }
 }
 
 void executarUla()
@@ -300,6 +470,11 @@ int main (int argc, char *argv[])
     unidadeLogicaAritmetica.entrada2 = 0;
     unidadeLogicaAritmetica.operacao = soma;
     unidadeLogicaAritmetica.saida = 0;
+
+    barramento.operacao = ler;
+    barramento.entrada = 0;
+    barramento.endereco = 0;
+    barramento.saida = 0;
     
     carregarMemoria(arquivoEntrada, &memoria);
 
