@@ -213,50 +213,95 @@ void pipelineBusca()
     // Lê o lugar de memória dito por PC (lembrando que pode ser esquerdo ou direito tbm)
     // e guarda o OpCode + dado em um lugar [A]
 
+    if (flagEstagioCongelado[0] == True)
+    {
+        return;
+    }
+
+    barramento.endereco = bancoRegistradores.PC;
+    barramento.operacao = ler;
+    executarBarramento();
+
+    bancoRegistradores.MBR = barramento.saida;
+    
+    uint64_t ladoEsquerdo;
+    uint64_t ladoDireito;
+
+    if (ladoInstrucao == Esquerdo)
+    {
+        bancoRegistradores.IBR = ladoDireito;
+        // divide lado esquerdo entre IR (opcode) e MAR (dado)
+        ladoInstrucao = Direito;
+    }
+    else 
+    {
+        // divide o lado direito entre IR e IBR
+        ladoInstrucao = Esquerdo;
+    }
 
     // OBS: O MBR, IR e IBR aqui são só para decoração. O IAS não funciona com pipeline.
     // a gente usa ladoInstrucao e busca toda vez. Isso é só pra fazer parecer que a gente tá fazendo algo.
 
     // Busca o endereço de PC na memória
-
-    // se  lado==esquerdo:
-    //     salva o lado direito em MBR
-    //     divide o lado esquerdo em IR e IBR
-    //     marca flag como "direito"
-    // senão:
-    //     salva o lado direito em IR e IBR
-    //     marca flag como "esquerdo"
 }
 
-uint64_t resultadoBusca;  // [A]
+uint64_t resultadoBusca; 
 
 void pipelineDecodificacao()
 {
+    if (flagEstagioCongelado[1] == True || flagBuscarDadoAnterior[0] == False)
+    {
+        return;
+    }
+    uint64_t opcode;
+    uint64_t endereco;
+
     // Opcode <- Opcode de (resultadobusca)
     // endereco <- Dado de (resultado busca)
-    // enum operacao op <- opCodeParaInstrucao(Opcode)
-    
-    // [B] <- op
-    // [C] <- endereco
 
-    // Lê o opcode e o dado do lugar [A]
-    // Armazena a instrução (já em forma enum) em [B]
-    // Armazena o endereço do operando em [C]
+    opcodeDecodificado = opCodeParaInstrucao(opcode);
+    enderecoDecodificado = endereco;
 }
+
+Instrucao opcodeDecodificado;
+uint64_t enderecoDecodificado;
+
 
 void pipelineBuscaOperandos()
 {
-    // Lê o endereço do operando de [C] e busca ele na memória
-    // Copia a instrução de [B] para [D]
-    // Armazena o dado em [E]
+    if (flagEstagioCongelado[2] == True)
+    {
+        return;
+    }
+    if (flagBuscarDadoAnterior[1] == False)
+    {
+        return;
+    }
 
-    // se for uma operacao normal
-    //  dado <- buscaNaMemoria([C])
-    // se for um stor
-    //  dado <- [C]
-    // [D] <- [B]
-    // [E] <- Dado
-    // 
+    if (dependenciaRAW == True)
+    {
+        if (enderecoDecodificado == enderecoRAW)
+        {
+            return;
+        }
+    }
+
+    switch (opcodeDecodificado)
+    {
+        case STOR_MX:
+        case STOR_MX_DIR:
+        case STOR_MX_ESQ:
+            dadoParaExecucao = enderecoDecodificado;
+            break;
+        default:
+            barramento.endereco = enderecoDecodificado;
+            barramento.operacao = ler;
+            executarBarramento();
+            dadoParaExecucao = barramento.saida;
+            break;
+    }
+
+    operacaoASerExecutada = opcodeDecodificado;
 }
 
 // B | D | Bo | Ex | Er
@@ -401,6 +446,15 @@ void pipelineEscritaResultados()
     if (flagBuscarDadoAnterior[3] == False)
     {
         return;
+    }
+
+    switch (instrucao)
+    {
+        case STOR_MX:
+        case STOR_MX_DIR:
+        case STOR_MX_ESQ:
+            dependenciaRAW = False;
+            break;
     }
 
     switch (instrucao)
