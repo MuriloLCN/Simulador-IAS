@@ -196,9 +196,8 @@ BarramentoMemoria barramento;
 // Contadores de clock para que seja simulado o pipeline
 int contadorClockExecucao = 1;
 
-// Indicam se os dados anteriores podem ser lidos e executados
-booleano flagBuscarDadoAnterior[] = {True, True, True, True};
-booleano flagEstagioCongelado[] = {False, False, False, False};
+//                                   B      D      Bo     Ex     Er
+booleano flagEstagioCongelado[] = {False, False, False, False, False};
 
 // Vira true toda vez que é feito uma escrita
 booleano dependenciaRAW = False;
@@ -249,7 +248,7 @@ uint64_t resultadoBusca;
 
 void pipelineDecodificacao()
 {
-    if (flagEstagioCongelado[1] == True || flagBuscarDadoAnterior[0] == False)
+    if (flagEstagioCongelado[1] == True)
     {
         return;
     }
@@ -273,16 +272,16 @@ void pipelineBuscaOperandos()
     {
         return;
     }
-    if (flagBuscarDadoAnterior[1] == False)
-    {
-        return;
-    }
 
     if (dependenciaRAW == True)
     {
         if (enderecoDecodificado == enderecoRAW)
         {
-            return;
+            // Inserindo bolha
+            opcodeDecodificado = NENHUMA;
+            flagEstagioCongelado[0] = True;
+            flagEstagioCongelado[1] = True;
+            // return;
         }
     }
 
@@ -315,12 +314,24 @@ Instrucao operacaoASerExecutada;
 // Em operações LOAD e STOR, representa o endereço de memória a ser acessado
 uint64_t dadoParaExecucao;
 
-void pipelineExecucao()
+void pipelineExecucao() 
 {
     // Se a instrução antiga acabou, pegue a quantidade de ciclos de clock para a instrução atual
     if (flagPegarNovoContador == True)
     {
         // contador clock = quantidade de ciclos de clock daquela instrucao [D]
+        switch (operacaoASerExecutada)
+        {
+        case STOR_MX:
+        case STOR_MX_DIR:
+        case STOR_MX_ESQ:
+            dependenciaRAW = True;
+            enderecoRAW = dadoParaExecucao;
+            break;
+        default:
+            dependenciaRAW = False;
+            break;
+        }
         flagPegarNovoContador = False;
     }
     // Se a instrução precisa esperar ser feita
@@ -328,11 +339,11 @@ void pipelineExecucao()
     {
         contadorClockExecucao -= 1;
 
-        // Para que a escrita de resultados não escreva dados antigos
-        flagBuscarDadoAnterior[3] = False;
-
-        // Para que não ocorra a busca de operandos
-        flagBuscarDadoAnterior[1] = False;
+        // Congelando o pipeline
+        flagEstagioCongelado[0] = True;
+        flagEstagioCongelado[1] = True;
+        flagEstagioCongelado[2] = True;
+        flagEstagioCongelado[4] = True;
 
         return;
     }
@@ -341,8 +352,7 @@ void pipelineExecucao()
     flagPegarNovoContador = True;
 
     // Liberando o pipeline
-    flagBuscarDadoAnterior[1] = True;
-    flagBuscarDadoAnterior[3] = True;
+    flagEstagioCongelado[4] = False;
 
     switch (operacaoASerExecutada)
     {
@@ -432,8 +442,6 @@ void pipelineExecucao()
     default:
         break;
     }
-
-
 }  
 
 uint64_t resultado;
@@ -443,19 +451,14 @@ Instrucao instrucao;
 void pipelineEscritaResultados()
 {
     // Se o dado anterior não estiver pronto, saia
-    if (flagBuscarDadoAnterior[3] == False)
+    if (flagEstagioCongelado[4] == False)
     {
         return;
     }
 
-    switch (instrucao)
-    {
-        case STOR_MX:
-        case STOR_MX_DIR:
-        case STOR_MX_ESQ:
-            dependenciaRAW = False;
-            break;
-    }
+    flagEstagioCongelado[0] = False;
+    flagEstagioCongelado[1] = False;
+    flagEstagioCongelado[2] = False;
 
     switch (instrucao)
     {
