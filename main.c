@@ -374,6 +374,7 @@ void pipelineExecucao()
             break;
         }
     case JUMP_DIR:
+        // talvez isso deva ir para a ER?
         // PC <- (int) dado para execucao
         // limpar pipeline
         // lado = dir
@@ -451,7 +452,7 @@ Instrucao instrucao;
 void pipelineEscritaResultados()
 {
     // Se o dado anterior não estiver pronto, saia
-    if (flagEstagioCongelado[4] == False)
+    if (flagEstagioCongelado[4] == True)
     {
         return;
     }
