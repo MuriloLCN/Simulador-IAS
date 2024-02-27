@@ -368,35 +368,99 @@ void pegaCiclo (char *linha, Instrucao *instrucao, int *ciclos)
 
     *ciclos = atoi(ciclos_buffer);
 
-    if (strcmp(instrucao_buffer, "load"))
+    if (strcmp(instrucao_buffer, "load")==0)
     {
-
+        *instrucao = LOAD_MQ;
     }
 
-    else if (strcmp(instrucao_buffer, "loadm"))
+    else if (strcmp(instrucao_buffer, "loadmm")==0)
     {
-
+        *instrucao = LOAD_MQ_MX;
     }    
 
-    else if (strcmp(instrucao_buffer, "loadmm"))
+    else if (strcmp(instrucao_buffer, "stor")==0)
     {
-
+        *instrucao = STOR_MX;
     }    
 
-    else if (strcmp(instrucao_buffer, "load-m"))
+    else if (strcmp(instrucao_buffer, "load")==0)
     {
-
+        *instrucao = LOAD_MX;
     }    
 
-    else if (strcmp(instrucao_buffer, "load|m"))
+    else if (strcmp(instrucao_buffer, "load-m")==0)
     {
-
+        *instrucao = LOAD_MenosMX;
     }    
 
-    // continua
+    else if (strcmp(instrucao_buffer, "load|m")==0)
+    {
+        *instrucao = LOAD_ABSMX;
+    }   
+
+    else if (strcmp(instrucao_buffer, "load-|m")==0)
+    {
+        *instrucao = LOAD_MenosABSMX;
+    }   
+
+    else if (strcmp(instrucao_buffer, "jump")==0)
+    {
+        *instrucao = JUMP_DIR;
+    }   
+
+    else if (strcmp(instrucao_buffer, "jump+")==0)
+    {
+        *instrucao = JUMPMais_DIR;
+    }   
+
+    else if (strcmp(instrucao_buffer, "add")==0)
+    {
+        *instrucao = ADD_MX;
+    }   
+
+    else if (strcmp(instrucao_buffer, "add|")==0)
+    {
+        *instrucao = ADD_ABSMX;
+    }   
+
+    else if (strcmp(instrucao_buffer, "sub")==0)
+    {
+        *instrucao = SUB_MX;
+    }   
+
+    else if (strcmp(instrucao_buffer, "sub-")==0)
+    {
+        *instrucao = SUB_ABSMX;
+    } 
+
+    else if (strcmp(instrucao_buffer, "mul")==0)
+    {
+        *instrucao = MUL_MX;
+    }     
+
+    else if (strcmp(instrucao_buffer, "div")==0)
+    {
+        *instrucao = DIV_MX;
+    }   
+
+    else if (strcmp(instrucao_buffer, "lsh")==0)
+    {
+        *instrucao = LSH;
+    }   
+
+    else if (strcmp(instrucao_buffer, "rsh")==0)
+    {
+        *instrucao = RSH;
+    }   
+
+    else if (strcmp(instrucao_buffer, "storm")==0)
+    {
+        *instrucao = STOR_MX_DIR;
+    }   
+
 }
 
-void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria)
+void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor)
 {
     /*
         Carrega as primeiras linhas do arquivo de entrada (i.e, que contém dados) para a memória
@@ -414,7 +478,7 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria)
     int linhaAtual = 0;
     
     fgets(linha, 30, arquivoEntrada);
-    if (strcmp(linha, "/*")) // verifica, primeiramente, se existe a seção de declaração dos ciclos de clock
+    if (strcmp(linha, "/*") == 0) // verifica, primeiramente, se existe a seção de declaração dos ciclos de clock
     {
         printf("\n ** Inicio da leitura dos ciclos de clock **\n");
         sec_ciclos = True;
@@ -433,18 +497,23 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria)
             linha[strlen(linha) - 1] = '\0';
         }
 
-        if (strcmp(linha, "*/"))
+        if (strcmp(linha, "*/")==0)
         {
             printf("\n ** Fim da leitura dos ciclos de clock **\n");
             sec_ciclos = False;
         }
 
         else 
-        {
-
+        {   
+            Instrucao instrucao;
+            int ciclo;
+            pegaCiclo(linha, &instrucao, &ciclo);
+            if (instrucao == JUMP_DIR) ciclos_vetor[JUMP_ESQ] = ciclo;
+            if (instrucao == JUMPMais_DIR) ciclos_vetor[JUMPMais_ESQ] = ciclo;
+            if (instrucao == STOR_MX_DIR) ciclos_vetor[STOR_MX_ESQ] = ciclo;
+            ciclos_vetor[instrucao] = ciclo;
         }
     } 
-
 
     do
     {
