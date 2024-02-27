@@ -188,6 +188,31 @@ Instrucao opCodeParaInstrucao(uint64_t opCode)
     }
 }
 
+int ciclosPorInstrucao[] = {
+    1, // LOAD_MQ,
+    1, // LOAD_MQ_MX,
+    1, // STOR_MX,
+    1, // LOAD_MX,
+    1, // LOAD_MenosMX,
+    1, // LOAD_ABSMX,
+    1, // LOAD_MenosABSMX,
+    1, // JUMP_ESQ,
+    1, // JUMP_DIR,
+    1, // JUMPMais_ESQ,
+    1, // JUMPMais_DIR,
+    1, // ADD_MX,
+    1, // ADD_ABSMX,
+    1, // SUB_MX,
+    1, // SUB_ABSMX,
+    1, // MUL_MX,
+    1, // DIV_MX,
+    1, // LSH,
+    1, // RSH,
+    1, // STOR_MX_ESQ,
+    1, // STOR_MX_DIR,
+    1, // EXIT,
+    1  // NENHUMA
+};
 
 BR bancoRegistradores;
 ULA unidadeLogicaAritmetica;
@@ -314,7 +339,8 @@ void pipelineExecucao()
     // Se a instrução antiga acabou, pegue a quantidade de ciclos de clock para a instrução atual
     if (flagPegarNovoContador == True)
     {
-        // contador clock = quantidade de ciclos de clock daquela instrucao [D]
+        contadorClockExecucao = ciclosPorInstrucao[operacaoASerExecutada];
+        
         switch (operacaoASerExecutada)
         {
         case STOR_MX:
@@ -392,7 +418,7 @@ void pipelineExecucao()
         break;
     case DIV_MX:
         uint64_t res = bancoRegistradores.AC / dadoParaExecucao;
-        resultado = 0; // PARTE 1 VAI AQUI
+        resultado = res;
         resultado_auxiliar = 0; // PARTE 2 VAI AQUI
         break;
     case MUL_MX:
@@ -422,16 +448,41 @@ void pipelineExecucao()
         resultado = dadoParaExecucao;
         break;
     case STOR_MX_ESQ:
-        // pegar dado da memória no lugar 
-        // alterar apenas os bits sem ser do opcode
-        // guardar novamente na memória
+        barramento.operacao = ler;
+        barramento.endereco = dadoParaExecucao;
+        executarBarramento();
+        uint64_t dado = barramento.saida;
+
+        dado = dado & 0b1111111100000000000011111111111111111111;
+
+        uint64_t novaParte = bancoRegistradores.AC;
+
+        novaParte = novaParte << 20;
+
+        dado = dado | novaParte;
+
+        barramento.operacao = escrever;
+        barramento.endereco = dadoParaExecucao;
+        barramento.entrada = dado;
+        executarBarramento();
         break;
     case STOR_MX_DIR:
-        // pegar dado da memória no lugar
-        // alterar apenas os bits sem ser do opcode
-        // guardar novamente na memória
+        barramento.operacao = ler;
+        barramento.endereco = dadoParaExecucao;
+        executarBarramento();
+        uint64_t dado = barramento.saida; 
+
+        dado = dado & 0b1111111111111111111111111111000000000000;
+
+        uint64_t novaParte = bancoRegistradores.AC;
+
+        dado = dado | novaParte;
+        barramento.operacao = escrever;
+        barramento.endereco = dadoParaExecucao;
+        barramento.entrada = dado;
+        executarBarramento();
     case EXIT:
-        system("EXIT");
+        flagTerminou = True;
         break;
     case NENHUMA:
     case LOAD_MQ:
@@ -547,8 +598,29 @@ void simulacao()
     booleano flagTerminou = False;
     while (flagTerminou != True)
     {
-        // Aqui é simulado o funcionamento do IAS clock-a-clock
+        pipelineEscritaResultados();
+        pipelineExecucao();
+        pipelineBuscaOperandos();
+        pipelineDecodificacao();
+        pipelineBusca();
     }
+}
+
+void limparPipeline()
+{
+    resultado = 0;
+    resultado_auxiliar = 0;
+    instrucao = NENHUMA
+    
+    dadoParaExecucao = 0;
+    operacaoASerExecutada = NENHUMA;
+
+    flagPegarNovoContador = True;
+
+    opcodeDecodificado = NENHUMA;
+    enderecoDecodificado = 0;
+
+    resultadoBusca = 0;
 }
 
 int main (int argc, char *argv[])
