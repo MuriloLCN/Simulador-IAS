@@ -237,11 +237,6 @@ void pipelineBusca()
         // divide o lado direito entre IR e IBR
         ladoInstrucao = Esquerdo;
     }
-
-    // OBS: O MBR, IR e IBR aqui são só para decoração. O IAS não funciona com pipeline.
-    // a gente usa ladoInstrucao e busca toda vez. Isso é só pra fazer parecer que a gente tá fazendo algo.
-
-    // Busca o endereço de PC na memória
 }
 
 uint64_t resultadoBusca; 
