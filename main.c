@@ -406,9 +406,8 @@ void pipelineExecucao()
             break;
         }
     case JUMP_ESQ:
-        // PC <- (int) dado para execucao
-        // limpar pipeline
-        // lado = dir
+        bancoRegistradores.PC = (int) dadoParaExecucao;
+        limparPipeline();
         break;
     case RSH:
         resultado = bancoRegistradores.AC / 2;
@@ -418,13 +417,15 @@ void pipelineExecucao()
         break;
     case DIV_MX:
         uint64_t res = bancoRegistradores.AC / dadoParaExecucao;
-        resultado = res;
-        resultado_auxiliar = 0; // PARTE 2 VAI AQUI
+        resultado = bancoRegistradores.AC % dadoParaExecucao;
+        resultado_auxiliar = res;
         break;
     case MUL_MX:
         uint64_t res = dadoParaExecucao * bancoRegistradores.MQ;
-        resultado = 0; // PARTE 1 VAI AQUI
-        resultado_auxiliar = 0; // PARTE 2 VAI AQUI
+        uint64_t res1 = res & 0b111111111111111111111111111111111111111;
+        res = res >> 39;
+        resultado = res; 
+        resultado_auxiliar = res1;
         break;
     case LOAD_ABSMX:
         resultado = abs(dadoParaExecucao);
@@ -621,6 +622,12 @@ void limparPipeline()
     enderecoDecodificado = 0;
 
     resultadoBusca = 0;
+
+    flagEstagioCongelado[0] = False;
+    flagEstagioCongelado[1] = False;
+    flagEstagioCongelado[2] = False;
+    flagEstagioCongelado[3] = False;
+    flagEstagioCongelado[4] = False;
 }
 
 int main (int argc, char *argv[])
@@ -664,7 +671,7 @@ int main (int argc, char *argv[])
 
     simulacao();   
 
-    dumpDaMemoria(memoria, argv[4]);
+    dumpDaMemoria(memoria, argv[2]);
         
     free(memoria);
     fclose(arquivoEntrada);
