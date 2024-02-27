@@ -18,6 +18,32 @@
 
 typedef enum {False, True} booleano;
 
+typedef enum {
+  LOAD_MQ,
+  LOAD_MQ_MX,
+  STOR_MX,
+  LOAD_MX,
+  LOAD_MenosMX,
+  LOAD_ABSMX,
+  LOAD_MenosABSMX,
+  JUMP_ESQ,
+  JUMP_DIR,
+  JUMPMais_ESQ,
+  JUMPMais_DIR,
+  ADD_MX,
+  ADD_ABSMX,
+  SUB_MX,
+  SUB_ABSMX,
+  MUL_MX,
+  DIV_MX,
+  LSH,
+  RSH,
+  STOR_MX_ESQ,
+  STOR_MX_DIR,
+  EXIT,
+  NENHUMA
+} Instrucao;
+
 // ********************** Cabeçalhos de funções **********************
 void printBits(int64_t n);
 void printMemoria(uint8_t* memoria);
@@ -318,6 +344,58 @@ booleano stringEhNumericaOuNula(char* str)
     return True;
 }
 
+void pegaCiclo (char *linha, Instrucao *instrucao, int *ciclos)
+{
+    char instrucao_buffer[10], ciclos_buffer[5];
+    int indice = 0;
+    instrucao_buffer[indice] = linha[indice];
+
+    while (linha[indice] != ':') // pega a instrução, contida antes do sinal :
+    {
+        instrucao_buffer[indice] = linha[indice];
+        indice++;
+    }
+    instrucao_buffer[indice] = '\0';
+    indice++;
+
+    while (linha[indice] != '\0') // pega a quantiade de cilcos, contida antes do fim da string
+    {
+        ciclos_buffer[indice] = linha[indice];
+        indice++;
+    }
+    ciclos_buffer[indice] = '\0';
+    indice++;
+
+    *ciclos = atoi(ciclos_buffer);
+
+    if (strcmp(instrucao_buffer, "load"))
+    {
+
+    }
+
+    else if (strcmp(instrucao_buffer, "loadm"))
+    {
+
+    }    
+
+    else if (strcmp(instrucao_buffer, "loadmm"))
+    {
+
+    }    
+
+    else if (strcmp(instrucao_buffer, "load-m"))
+    {
+
+    }    
+
+    else if (strcmp(instrucao_buffer, "load|m"))
+    {
+
+    }    
+
+    // continua
+}
+
 void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria)
 {
     /*
@@ -329,10 +407,44 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria)
             uint8_t* memoria: A memória para armazenar os dados lidos
     */
     char linha[30];
+    booleano sec_ciclos = False;
     uint64_t numero_convertido;
     rewind(arquivoEntrada); // para garantir que irá ser lida as 500 primeiras linhas do arquivo de entrada
 
     int linhaAtual = 0;
+    
+    fgets(linha, 30, arquivoEntrada);
+    if (strcmp(linha, "/*")) // verifica, primeiramente, se existe a seção de declaração dos ciclos de clock
+    {
+        printf("\n ** Inicio da leitura dos ciclos de clock **\n");
+        sec_ciclos = True;
+    }
+
+    while (sec_ciclos)
+    {
+        fgets(linha, 30, arquivoEntrada);
+
+        if (linha[strlen(linha) - 1] == '\n')
+        {
+            linha[strlen(linha) - 1] = '\0';
+        }
+        if (linha[strlen(linha) - 1] == '\r')
+        {
+            linha[strlen(linha) - 1] = '\0';
+        }
+
+        if (strcmp(linha, "*/"))
+        {
+            printf("\n ** Fim da leitura dos ciclos de clock **\n");
+            sec_ciclos = False;
+        }
+
+        else 
+        {
+
+        }
+    } 
+
 
     do
     {
