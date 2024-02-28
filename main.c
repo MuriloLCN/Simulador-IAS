@@ -10,6 +10,10 @@
 
 uint8_t* memoria;
 
+void executarBarramento();
+void executarUla();
+void limparPipeline();
+
 typedef enum {False, True} booleano;
 
 typedef enum {
@@ -188,31 +192,32 @@ Instrucao opCodeParaInstrucao(uint64_t opCode)
     }
 }
 
-int ciclosPorInstrucao[] = {
-    1, // LOAD_MQ,
-    1, // LOAD_MQ_MX,
-    1, // STOR_MX,
-    1, // LOAD_MX,
-    1, // LOAD_MenosMX,
-    1, // LOAD_ABSMX,
-    1, // LOAD_MenosABSMX,
-    1, // JUMP_ESQ,
-    1, // JUMP_DIR,
-    1, // JUMPMais_ESQ,
-    1, // JUMPMais_DIR,
-    1, // ADD_MX,
-    1, // ADD_ABSMX,
-    1, // SUB_MX,
-    1, // SUB_ABSMX,
-    1, // MUL_MX,
-    1, // DIV_MX,
-    1, // LSH,
-    1, // RSH,
-    1, // STOR_MX_ESQ,
-    1, // STOR_MX_DIR,
-    1, // EXIT,
-    1  // NENHUMA
-};
+int* ciclosPorInstrucao;
+// int ciclosPorInstrucao[] = {
+//     1, // LOAD_MQ,
+//     1, // LOAD_MQ_MX,
+//     1, // STOR_MX,
+//     1, // LOAD_MX,
+//     1, // LOAD_MenosMX,
+//     1, // LOAD_ABSMX,
+//     1, // LOAD_MenosABSMX,
+//     1, // JUMP_ESQ,
+//     1, // JUMP_DIR,
+//     1, // JUMPMais_ESQ,
+//     1, // JUMPMais_DIR,
+//     1, // ADD_MX,
+//     1, // ADD_ABSMX,
+//     1, // SUB_MX,
+//     1, // SUB_ABSMX,
+//     1, // MUL_MX,
+//     1, // DIV_MX,
+//     1, // LSH,
+//     1, // RSH,
+//     1, // STOR_MX_ESQ,
+//     1, // STOR_MX_DIR,
+//     1, // EXIT,
+//     1  // NENHUMA
+// };
 
 BR bancoRegistradores;
 ULA unidadeLogicaAritmetica;
@@ -232,6 +237,23 @@ int enderecoRAW = 0;
 
 Lado ladoInstrucao = Esquerdo;
 
+uint64_t resultadoBusca; // Resultado da fase de busca
+
+// Resultados da fase de decodificação
+Instrucao opcodeDecodificado;
+uint64_t enderecoDecodificado;
+
+// Resultados da fase da busca de operandos
+Instrucao operacaoASerExecutada;
+uint64_t dadoParaExecucao; // Em operações LOAD e STOR, representa o endereço de memória a ser acessado
+
+// Resultados da fase de execução
+uint64_t resultado;
+uint64_t resultado_auxiliar;
+Instrucao instrucao;
+
+booleano flagTerminou = False;
+
 void pipelineBusca()
 {
     // Lê o lugar de memória dito por PC (lembrando que pode ser esquerdo ou direito tbm)
@@ -246,25 +268,26 @@ void pipelineBusca()
     barramento.operacao = ler;
     executarBarramento();
 
-    bancoRegistradores.MBR = barramento.saida;
+    bancoRegistradores.PC += 1;
+
+    uint64_t enderecoBuscado = barramento.saida;
     
-    uint64_t ladoEsquerdo;
-    uint64_t ladoDireito;
+    uint64_t ladoEsquerdo = (enderecoBuscado & 0b1111111111111111111100000000000000000000) >> 20;
+    uint64_t ladoDireito = enderecoBuscado & 0b11111111111111111111;
 
     if (ladoInstrucao == Esquerdo)
     {
         bancoRegistradores.IBR = ladoDireito;
-        // divide lado esquerdo entre IR (opcode) e MAR (dado)
+        resultadoBusca = ladoEsquerdo;
         ladoInstrucao = Direito;
     }
     else 
     {
-        // divide o lado direito entre IR e IBR
         ladoInstrucao = Esquerdo;
+        resultadoBusca = ladoDireito;
     }
 }
 
-uint64_t resultadoBusca; 
 
 void pipelineDecodificacao()
 {
@@ -275,15 +298,13 @@ void pipelineDecodificacao()
     uint64_t opcode;
     uint64_t endereco;
 
-    // Opcode <- Opcode de (resultadobusca)
-    // endereco <- Dado de (resultado busca)
+    opcode = (resultadoBusca & 0b11111111000000000000) >> 12;
+
+    endereco = resultadoBusca & 0b111111111111;
 
     opcodeDecodificado = opCodeParaInstrucao(opcode);
     enderecoDecodificado = endereco;
 }
-
-Instrucao opcodeDecodificado;
-uint64_t enderecoDecodificado;
 
 
 void pipelineBuscaOperandos()
@@ -323,16 +344,9 @@ void pipelineBuscaOperandos()
     operacaoASerExecutada = opcodeDecodificado;
 }
 
-// B | D | Bo | Ex | Er
 
 booleano flagPegarNovoContador = False;
 
-// Instrução que será executada
-Instrucao operacaoASerExecutada;
-
-// Dado para ser executado
-// Em operações LOAD e STOR, representa o endereço de memória a ser acessado
-uint64_t dadoParaExecucao;
 
 void pipelineExecucao() 
 {
@@ -395,10 +409,10 @@ void pipelineExecucao()
             break;
         }
     case JUMP_DIR:
-        // talvez isso deva ir para a ER?
-        // PC <- (int) dado para execucao
-        // limpar pipeline
-        // lado = dir
+        bancoRegistradores.PC = (int) dadoParaExecucao;
+        limparPipeline();
+        ladoInstrucao = Direito;
+        instrucao = NENHUMA;
         break;
     case JUMPMais_ESQ:
         if (bancoRegistradores.AC < 0)
@@ -408,6 +422,8 @@ void pipelineExecucao()
     case JUMP_ESQ:
         bancoRegistradores.PC = (int) dadoParaExecucao;
         limparPipeline();
+        ladoInstrucao = Esquerdo;
+        instrucao = NENHUMA;
         break;
     case RSH:
         resultado = bancoRegistradores.AC / 2;
@@ -416,16 +432,12 @@ void pipelineExecucao()
         resultado = bancoRegistradores.AC * 2;
         break;
     case DIV_MX:
-        uint64_t res = bancoRegistradores.AC / dadoParaExecucao;
         resultado = bancoRegistradores.AC % dadoParaExecucao;
-        resultado_auxiliar = res;
+        resultado_auxiliar = bancoRegistradores.AC / dadoParaExecucao;
         break;
     case MUL_MX:
-        uint64_t res = dadoParaExecucao * bancoRegistradores.MQ;
-        uint64_t res1 = res & 0b111111111111111111111111111111111111111;
-        res = res >> 39;
-        resultado = res; 
-        resultado_auxiliar = res1;
+        resultado = (dadoParaExecucao * bancoRegistradores.MQ) >> 39;
+        resultado_auxiliar = (dadoParaExecucao * bancoRegistradores.MQ) & 0b111111111111111111111111111111111111111;
         break;
     case LOAD_ABSMX:
         resultado = abs(dadoParaExecucao);
@@ -452,35 +464,20 @@ void pipelineExecucao()
         barramento.operacao = ler;
         barramento.endereco = dadoParaExecucao;
         executarBarramento();
-        uint64_t dado = barramento.saida;
-
-        dado = dado & 0b1111111100000000000011111111111111111111;
-
-        uint64_t novaParte = bancoRegistradores.AC;
-
-        novaParte = novaParte << 20;
-
-        dado = dado | novaParte;
 
         barramento.operacao = escrever;
         barramento.endereco = dadoParaExecucao;
-        barramento.entrada = dado;
+        barramento.entrada = (barramento.saida & 0b1111111100000000000011111111111111111111)| (bancoRegistradores.AC << 20);
         executarBarramento();
         break;
     case STOR_MX_DIR:
         barramento.operacao = ler;
         barramento.endereco = dadoParaExecucao;
         executarBarramento();
-        uint64_t dado = barramento.saida; 
 
-        dado = dado & 0b1111111111111111111111111111000000000000;
-
-        uint64_t novaParte = bancoRegistradores.AC;
-
-        dado = dado | novaParte;
         barramento.operacao = escrever;
         barramento.endereco = dadoParaExecucao;
-        barramento.entrada = dado;
+        barramento.entrada = (barramento.saida & 0b1111111111111111111111111111000000000000) | bancoRegistradores.AC;
         executarBarramento();
     case EXIT:
         flagTerminou = True;
@@ -492,9 +489,6 @@ void pipelineExecucao()
     }
 }  
 
-uint64_t resultado;
-uint64_t resultado_auxiliar;
-Instrucao instrucao;
 
 void pipelineEscritaResultados()
 {
@@ -545,6 +539,7 @@ void pipelineEscritaResultados()
         case JUMP_ESQ:
         case JUMPMais_DIR:
         case JUMPMais_ESQ:
+        case NENHUMA:
         default:
             break;
         }
@@ -593,16 +588,22 @@ void executarUla()
     }
 }
 
+
 void simulacao()
 {
     // Ciclos de clock
-    booleano flagTerminou = False;
+    
     while (flagTerminou != True)
     {
+        printf("\nFazendo a escrita de resultados");
         pipelineEscritaResultados();
+        printf("\nFazendo a execução");
         pipelineExecucao();
+        printf("\nFazendo a busca de operandos");
         pipelineBuscaOperandos();
+        printf("\nFazendo a decodificação");
         pipelineDecodificacao();
+        printf("\nFazendo a busca");
         pipelineBusca();
     }
 }
@@ -611,7 +612,7 @@ void limparPipeline()
 {
     resultado = 0;
     resultado_auxiliar = 0;
-    instrucao = NENHUMA
+    instrucao = NENHUMA;
     
     dadoParaExecucao = 0;
     operacaoASerExecutada = NENHUMA;
@@ -649,10 +650,17 @@ int main (int argc, char *argv[])
         return 1;
     }
 
+    ciclosPorInstrucao = (int*)malloc(sizeof(int) * 23);
+
+    for (int i = 0; i < 23; i++)
+    {
+        ciclosPorInstrucao[i] = 1;
+    }
+
     bancoRegistradores.AC = 0;
     bancoRegistradores.MQ = 0;
     bancoRegistradores.MBR = 0;
-    bancoRegistradores.PC = 0;
+    bancoRegistradores.PC = 500;
     bancoRegistradores.MAR = 0;
     bancoRegistradores.IBR = 0;
     bancoRegistradores.IR = 0;
@@ -667,13 +675,16 @@ int main (int argc, char *argv[])
     barramento.endereco = 0;
     barramento.saida = 0;
     
-    carregarMemoria(arquivoEntrada, &memoria);
+    printf("\nCarregando memoria");
+    //carregarMemoria(arquivoEntrada, &memoria, &ciclosPorInstrucao);
 
+    printf("\nEntrando na simulação");
     simulacao();   
 
     dumpDaMemoria(memoria, argv[2]);
         
     free(memoria);
+    free(ciclosPorInstrucao);
     fclose(arquivoEntrada);
     return 0;
     

@@ -54,7 +54,7 @@ void armazenaNaMemoria (int posicao, uint64_t num, uint8_t *memoria);
 uint64_t buscaNaMemoria (uint8_t *memoria, int posicao);
 int64_t converteDado(uint64_t entrada);
 booleano stringEhNumericaOuNula(char* str);
-void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria);
+void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int* ciclos_vetor);
 void dumpDaMemoria(uint8_t *memoria, char nome_arq_saida[]);
 booleano comecaCom(char* palavra, char* prefixo);
 booleano terminaCom(char* palavra, char* sufixo);
@@ -62,7 +62,7 @@ void converteInstrucao(char* instrucao, char* opcode, int* endereco);
 void completaMemoria (int PC, uint8_t *memoria);
 // *******************************************************************
 
-void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria)
+void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor)
 {
     // Carrega o arquivo de entrada para a memória
     
@@ -76,7 +76,7 @@ void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria)
     int opcodeEsquerdo, enderecoEsquerdo;
     booleano controle = False;
 
-    carregaDados(arquivoEntrada, *memoria); // carrega os dados presentes no arquivo de entrada para a memória do IAS;
+    carregaDados(arquivoEntrada, *memoria, *ciclos_vetor); // carrega os dados presentes no arquivo de entrada para a memória do IAS;
 
     int PC = 500; // as posições de 0 até a 499 já foram lidas
         
