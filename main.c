@@ -288,7 +288,6 @@ void pipelineBusca()
     }
 }
 
-
 void pipelineDecodificacao()
 {
     if (flagEstagioCongelado[1] == True)
@@ -305,7 +304,6 @@ void pipelineDecodificacao()
     opcodeDecodificado = opCodeParaInstrucao(opcode);
     enderecoDecodificado = endereco;
 }
-
 
 void pipelineBuscaOperandos()
 {
@@ -489,7 +487,6 @@ void pipelineExecucao()
     }
 }  
 
-
 void pipelineEscritaResultados()
 {
     // Se o dado anterior não estiver pronto, saia
@@ -588,7 +585,6 @@ void executarUla()
     }
 }
 
-
 void simulacao()
 {
     // Ciclos de clock
@@ -675,10 +671,8 @@ int main (int argc, char *argv[])
     barramento.endereco = 0;
     barramento.saida = 0;
     
-    printf("\nCarregando memoria");
-    //carregarMemoria(arquivoEntrada, &memoria, &ciclosPorInstrucao);
+    carregarMemoria(arquivoEntrada, &memoria, &ciclosPorInstrucao);
 
-    printf("\nEntrando na simulação");
     simulacao();   
 
     dumpDaMemoria(memoria, argv[2]);

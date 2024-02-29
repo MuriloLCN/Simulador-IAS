@@ -65,10 +65,12 @@ void completaMemoria (int PC, uint8_t *memoria);
 void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor)
 {
     // Carrega o arquivo de entrada para a memória
+    printf("\nEntrou no carregar memoria");
     
     char instrucao[100], opcode[6], operand[6];
 
     completaMemoria(0, *memoria);
+    printf("\nMemoria completada com zeros");
 
     int linhaAtualDeLeitura = 0;
 
@@ -76,8 +78,10 @@ void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor
     int opcodeEsquerdo, enderecoEsquerdo;
     booleano controle = False;
 
+    printf("\nChamando carrega dados");
     carregaDados(arquivoEntrada, *memoria, *ciclos_vetor); // carrega os dados presentes no arquivo de entrada para a memória do IAS;
 
+    printf("\nDados carregados");
     int PC = 500; // as posições de 0 até a 499 já foram lidas
         
     // Lê linha a linha do arquivo de entrada
@@ -473,7 +477,7 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor)
     char linha[30];
     booleano sec_ciclos = False;
     uint64_t numero_convertido;
-    rewind(arquivoEntrada); // para garantir que irá ser lida as 500 primeiras linhas do arquivo de entrada
+    rewind(arquivoEntrada); // para garantir que irá ser lida as primeiras linhas do arquivo de entrada
 
     int linhaAtual = 0;
     
@@ -484,7 +488,7 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor)
         sec_ciclos = True;
     }
 
-    while (sec_ciclos)
+    while (sec_ciclos == True)
     {
         fgets(linha, 30, arquivoEntrada);
 
@@ -514,7 +518,6 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor)
             ciclos_vetor[instrucao] = ciclo;
         }
     } 
-
     do
     {
         fgets(linha, 30, arquivoEntrada);
@@ -538,7 +541,7 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor)
         armazenaNaMemoria(linhaAtual, numero_convertido, memoria); // grava na memória o dado lido
         linhaAtual += 1;
 
-    } while (stringEhNumericaOuNula(linha));
+    } while (stringEhNumericaOuNula(linha) && (feof(arquivoEntrada) == 0));
 
     /*
         Como o algoritmo tem que ler a linha para saber se é um dado numérico/nulo, o laço acaba sendo finalizado na linha em que a condição é quebrada
