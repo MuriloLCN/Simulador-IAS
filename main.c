@@ -691,6 +691,11 @@ int main (int argc, char *argv[])
 
     // simulacao();   
 
+    for (int i = 0; i < 23; i++)
+    {
+        printf("%d",ciclosPorInstrucao[i]);
+    }
+
     dumpDaMemoria(memoria, argv[2]);
         
     free(memoria);

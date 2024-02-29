@@ -54,7 +54,7 @@ void armazenaNaMemoria (int posicao, uint64_t num, uint8_t *memoria);
 uint64_t buscaNaMemoria (uint8_t *memoria, int posicao);
 int64_t converteDado(uint64_t entrada);
 booleano stringEhNumericaOuNula(char* str);
-void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int* ciclos_vetor);
+void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int* ciclos_vetor, int* numeroLinhas);
 void dumpDaMemoria(uint8_t *memoria, char nome_arq_saida[]);
 booleano comecaCom(char* palavra, char* prefixo);
 booleano terminaCom(char* palavra, char* sufixo);
@@ -79,11 +79,11 @@ void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor
     booleano controle = False;
 
     printf("\nChamando carrega dados");
-    carregaDados(arquivoEntrada, *memoria, *ciclos_vetor); // carrega os dados presentes no arquivo de entrada para a memória do IAS;
+    carregaDados(arquivoEntrada, *memoria, *ciclos_vetor, &linhaAtualDeLeitura); // carrega os dados presentes no arquivo de entrada para a memória do IAS;
 
     printf("\nDados carregados");
-    int PC = 500; // as posições de 0 até a 499 já foram lidas
-        
+    int PC = linhaAtualDeLeitura;
+    
     // Lê linha a linha do arquivo de entrada
     while(fgets(instrucao, 100, arquivoEntrada) != NULL)
     {
@@ -350,17 +350,22 @@ booleano stringEhNumericaOuNula(char* str)
 
 void pegaCiclo (char *linha, Instrucao *instrucao, int *ciclos)
 {
+    printf("\nENTROU NA DESGRAÇA DO PEGA-CICLOS");
     char instrucao_buffer[10], ciclos_buffer[5];
     int indice = 0;
     instrucao_buffer[indice] = linha[indice];
+
+    printf("\nENTROU NA DESGRAÇA DO PEGA-CICLOS");
 
     while (linha[indice] != ':') // pega a instrução, contida antes do sinal :
     {
         instrucao_buffer[indice] = linha[indice];
         indice++;
     }
-    instrucao_buffer[indice] = '\0';
+    instrucao_buffer[indice] = '\0';        	
     indice++;
+
+    printf("\n%s.", instrucao_buffer);
 
     while (linha[indice] != '\0') // pega a quantiade de cilcos, contida antes do fim da string
     {
@@ -372,99 +377,104 @@ void pegaCiclo (char *linha, Instrucao *instrucao, int *ciclos)
 
     *ciclos = atoi(ciclos_buffer);
 
-    if (strcmp(instrucao_buffer, "load")==0)
+    if (strcmp(instrucao_buffer, "load")==0 || strcmp(instrucao_buffer, "LOAD")==0)
     {
         *instrucao = LOAD_MQ;
     }
 
-    else if (strcmp(instrucao_buffer, "loadmm")==0)
+    else if (strcmp(instrucao_buffer, "loadmm")==0 || strcmp(instrucao_buffer, "LOADMM")==0)
     {
         *instrucao = LOAD_MQ_MX;
     }    
 
-    else if (strcmp(instrucao_buffer, "stor")==0)
+    else if (strcmp(instrucao_buffer, "stor")==0 || strcmp(instrucao_buffer, "STOR")==0)
     {
         *instrucao = STOR_MX;
     }    
 
-    else if (strcmp(instrucao_buffer, "load")==0)
+    else if (strcmp(instrucao_buffer, "load")==0 || strcmp(instrucao_buffer, "LOAD")==0)
     {
         *instrucao = LOAD_MX;
     }    
 
-    else if (strcmp(instrucao_buffer, "load-m")==0)
+    else if (strcmp(instrucao_buffer, "load-m")==0 || strcmp(instrucao_buffer, "LOAD-M")==0)
     {
         *instrucao = LOAD_MenosMX;
     }    
 
-    else if (strcmp(instrucao_buffer, "load|m")==0)
+    else if (strcmp(instrucao_buffer, "load|m")==0 || strcmp(instrucao_buffer, "LOAD|M")==0)
     {
         *instrucao = LOAD_ABSMX;
     }   
 
-    else if (strcmp(instrucao_buffer, "load-|m")==0)
+    else if (strcmp(instrucao_buffer, "load-|m")==0 || strcmp(instrucao_buffer, "LOAD-|M")==0)
     {
         *instrucao = LOAD_MenosABSMX;
     }   
 
-    else if (strcmp(instrucao_buffer, "jump")==0)
+    else if (strcmp(instrucao_buffer, "jump")==0 || strcmp(instrucao_buffer, "JUMP")==0)
     {
         *instrucao = JUMP_DIR;
     }   
 
-    else if (strcmp(instrucao_buffer, "jump+")==0)
+    else if (strcmp(instrucao_buffer, "jump+")==0 || strcmp(instrucao_buffer, "JUMP+")==0)
     {
         *instrucao = JUMPMais_DIR;
     }   
 
-    else if (strcmp(instrucao_buffer, "add")==0)
+    else if (strcmp(instrucao_buffer, "add")==0 || strcmp(instrucao_buffer, "ADD")==0)
     {
         *instrucao = ADD_MX;
     }   
 
-    else if (strcmp(instrucao_buffer, "add|")==0)
+    else if (strcmp(instrucao_buffer, "add|")==0 || strcmp(instrucao_buffer, "ADD|")==0)
     {
         *instrucao = ADD_ABSMX;
     }   
 
-    else if (strcmp(instrucao_buffer, "sub")==0)
+    else if (strcmp(instrucao_buffer, "sub")==0 || strcmp(instrucao_buffer, "SUB")==0)
     {
         *instrucao = SUB_MX;
     }   
 
-    else if (strcmp(instrucao_buffer, "sub-")==0)
+    else if (strcmp(instrucao_buffer, "sub|")==0 || strcmp(instrucao_buffer, "SUB|")==0)
     {
         *instrucao = SUB_ABSMX;
     } 
 
-    else if (strcmp(instrucao_buffer, "mul")==0)
+    else if (strcmp(instrucao_buffer, "mul")==0 || strcmp(instrucao_buffer, "MUL")==0)
     {
         *instrucao = MUL_MX;
     }     
 
-    else if (strcmp(instrucao_buffer, "div")==0)
+    else if (strcmp(instrucao_buffer, "div")==0 || strcmp(instrucao_buffer, "DIV")==0)
     {
         *instrucao = DIV_MX;
     }   
 
-    else if (strcmp(instrucao_buffer, "lsh")==0)
+    else if (strcmp(instrucao_buffer, "lsh")==0 || strcmp(instrucao_buffer, "LSH")==0)
     {
         *instrucao = LSH;
     }   
 
-    else if (strcmp(instrucao_buffer, "rsh")==0)
+    else if (strcmp(instrucao_buffer, "rsh")==0 || strcmp(instrucao_buffer, "RSH")==0)
     {
         *instrucao = RSH;
     }   
 
-    else if (strcmp(instrucao_buffer, "storm")==0)
+    else if (strcmp(instrucao_buffer, "storm")==0 || strcmp(instrucao_buffer, "STORM")==0)
     {
         *instrucao = STOR_MX_DIR;
     }   
 
+    else
+    {
+        *instrucao = NENHUMA;
+    }
+
 }
 
-void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor)
+void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, int* numeroLinhas)
 {
     /*
         Carrega as primeiras linhas do arquivo de entrada (i.e, que contém dados) para a memória
@@ -482,9 +492,19 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor)
     int linhaAtual = 0;
     
     fgets(linha, 30, arquivoEntrada);
+
+    if (linha[strlen(linha) - 1] == '\n')
+    {
+        linha[strlen(linha) - 1] = '\0';
+    }
+    if (linha[strlen(linha) - 1] == '\r')
+    {
+        linha[strlen(linha) - 1] = '\0';
+    }
+
     if (strcmp(linha, "/*") == 0) // verifica, primeiramente, se existe a seção de declaração dos ciclos de clock
     {
-        printf("\n ** Inicio da leitura dos ciclos de clock **\n");
+        *numeroLinhas = *numeroLinhas + 1;
         sec_ciclos = True;
     }
 
@@ -500,6 +520,10 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor)
         {
             linha[strlen(linha) - 1] = '\0';
         }
+        if (linha[strlen(linha) - 1] == ' ')
+        {
+            linha[strlen(linha) - 1] = '\0';
+        }
 
         if (strcmp(linha, "*/")==0)
         {
@@ -512,12 +536,16 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor)
             Instrucao instrucao;
             int ciclo;
             pegaCiclo(linha, &instrucao, &ciclo);
+            printf("\n%d: %d", instrucao, ciclo);
             if (instrucao == JUMP_DIR) ciclos_vetor[JUMP_ESQ] = ciclo;
             if (instrucao == JUMPMais_DIR) ciclos_vetor[JUMPMais_ESQ] = ciclo;
             if (instrucao == STOR_MX_DIR) ciclos_vetor[STOR_MX_ESQ] = ciclo;
             ciclos_vetor[instrucao] = ciclo;
         }
+
+        *numeroLinhas = *numeroLinhas + 1;
     } 
+
     do
     {
         fgets(linha, 30, arquivoEntrada);
@@ -542,12 +570,11 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor)
         linhaAtual += 1;
 
     } while (stringEhNumericaOuNula(linha) && (feof(arquivoEntrada) == 0));
-
     /*
         Como o algoritmo tem que ler a linha para saber se é um dado numérico/nulo, o laço acaba sendo finalizado na linha em que a condição é quebrada
         com isso, é necessário retroceder (com o descritor do arquivo de entrada) para a posição de leitura antes da última linha ser processada
     */
-    fseek(arquivoEntrada, -(strlen(linha)+1), SEEK_CUR);
+    //fseek(arquivoEntrada, -(strlen(linha)+1), SEEK_CUR);
 }
 
 void dumpDaMemoria(uint8_t *memoria, char nome_arq_saida[]) 
