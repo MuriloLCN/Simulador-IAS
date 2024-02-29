@@ -264,13 +264,15 @@ void pipelineBusca()
         return;
     }
 
+    printf("\nExecutando busca");
     barramento.endereco = bancoRegistradores.PC;
     barramento.operacao = ler;
+    printf("\nEntrada barramento: ", barramento.endereco);
     executarBarramento();
 
-    bancoRegistradores.PC += 1;
-
     uint64_t enderecoBuscado = barramento.saida;
+
+    printf("\nDado buscado: %d", enderecoBuscado);
     
     uint64_t ladoEsquerdo = (enderecoBuscado & 0b1111111111111111111100000000000000000000) >> 20;
     uint64_t ladoDireito = enderecoBuscado & 0b11111111111111111111;
@@ -285,6 +287,7 @@ void pipelineBusca()
     {
         ladoInstrucao = Esquerdo;
         resultadoBusca = ladoDireito;
+        bancoRegistradores.PC += 1;
     }
 }
 
@@ -591,15 +594,28 @@ void simulacao()
     
     while (flagTerminou != True)
     {
+        printf("\n--------------------------------");
         printf("\nFazendo a escrita de resultados");
+        printf("\nEntradas: %d %d %d", resultado, resultado_auxiliar, instrucao);
         pipelineEscritaResultados();
-        printf("\nFazendo a execução");
+
+        printf("\nFazendo a execucao");
+        printf("\nEntradas: %d %d", operacaoASerExecutada, dadoParaExecucao);
         pipelineExecucao();
+        printf("\nSaidas: %d %d %d", resultado, resultado_auxiliar, instrucao);
+        
         printf("\nFazendo a busca de operandos");
+        printf("\nEntradas: %d %d", opcodeDecodificado, enderecoDecodificado);
         pipelineBuscaOperandos();
-        printf("\nFazendo a decodificação");
+        printf("\nSaidas: %d %d", operacaoASerExecutada, dadoParaExecucao);
+        
+        printf("\nFazendo a decodificacao");
+        printf("\nEntrada: %d", resultadoBusca);
         pipelineDecodificacao();
-        printf("\nFazendo a busca");
+        printf("\nSaidas: %d %d", opcodeDecodificado, enderecoDecodificado);
+        
+        printf("\nFazendo a busca, PC = %d", bancoRegistradores.PC);
+        printf("\nSaida: %d", resultadoBusca);
         pipelineBusca();
     }
 }
@@ -673,7 +689,7 @@ int main (int argc, char *argv[])
     
     carregarMemoria(arquivoEntrada, &memoria, &ciclosPorInstrucao);
 
-    simulacao();   
+    // simulacao();   
 
     dumpDaMemoria(memoria, argv[2]);
         
