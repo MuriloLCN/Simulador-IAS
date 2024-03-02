@@ -696,7 +696,7 @@ int main (int argc, char *argv[])
         printf("%d",ciclosPorInstrucao[i]);
     }
 
-    dumpDaMemoria(memoria, argv[2]);
+    //dumpDaMemoria(memoria, argv[2]);
         
     free(memoria);
     free(ciclosPorInstrucao);
