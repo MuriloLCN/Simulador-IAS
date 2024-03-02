@@ -548,21 +548,20 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
 
     for (int i=0; i<23; i++) printf("ciclos_vetor[%i] = %i\n", i, ciclos_vetor[i]);
 
-    // ATENÇÃO: a primeira linha do arquivo não é a primeira linha da memória, precisa-se guardar dois índices
     *numeroLinhas = 0;
-    do
+
+    fgets(linha, 30, arquivoEntrada);
+    if (linha[strlen(linha) - 1] == '\n')
     {
-        fgets(linha, 30, arquivoEntrada);
-
-        if (linha[strlen(linha) - 1] == '\n')
-        {
-            linha[strlen(linha) - 1] = '\0';
-        }
-        if (linha[strlen(linha) - 1] == '\r')
-        {
-            linha[strlen(linha) - 1] = '\0';
-        }
-
+        linha[strlen(linha) - 1] = '\0';
+    }
+    if (linha[strlen(linha) - 1] == '\r')
+    {
+        linha[strlen(linha) - 1] = '\0';
+    }
+    
+    while (stringEhNumericaOuNula(linha) && (feof(arquivoEntrada) == 0))
+    {
         if (linha[0] == '-')
         {
             numero_convertido = strtoll(linha+1, NULL, 10); // converte a string para inteiro (pulando o caractere -)
@@ -573,9 +572,18 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
         armazenaNaMemoria(*numeroLinhas, numero_convertido, memoria); // grava na memória o dado lido
         //linhaAtual += 1;
         *numeroLinhas += 1;
-
-    } while (stringEhNumericaOuNula(linha) && (feof(arquivoEntrada) == 0));
-    //*numeroLinhas += 1; // corrige a posição atual na leitura
+        fgets(linha, 30, arquivoEntrada);
+        if (linha[strlen(linha) - 1] == '\n')
+        {
+            linha[strlen(linha) - 1] = '\0';
+        }
+        if (linha[strlen(linha) - 1] == '\r')
+        {
+            linha[strlen(linha) - 1] = '\0';
+        }
+    }
+    printf("Saindo dos numeros linha %i\n", *numeroLinhas);
+    *numeroLinhas -= 1; // corrige a posição atual na leitura
     /*
         Como o algoritmo tem que ler a linha para saber se é um dado numérico/nulo, o laço acaba sendo finalizado na linha em que a condição é quebrada
         com isso, é necessário retroceder (com o descritor do arquivo de entrada) para a posição de leitura antes da última linha ser processada
