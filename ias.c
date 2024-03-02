@@ -352,7 +352,7 @@ void pegaCiclo (char *linha, Instrucao *instrucao, int *ciclos)
 {
     printf("\nENTROU NA DESGRAÇA DO PEGA-CICLOS");
     char instrucao_buffer[10], ciclos_buffer[5];
-    int indice = 0;
+    int indice = 0, ciclos_indice=0;
     instrucao_buffer[indice] = linha[indice];
 
     printf("\nENTROU NA DESGRAÇA DO PEGA-CICLOS");
@@ -367,17 +367,19 @@ void pegaCiclo (char *linha, Instrucao *instrucao, int *ciclos)
 
     printf("\n%s.", instrucao_buffer);
 
-    while (linha[indice] != '\0') // pega a quantiade de cilcos, contida antes do fim da string
+    while (linha[indice] != '\0') // pega a quantiade de ciclos, contida antes do fim da string
     {
-        ciclos_buffer[indice] = linha[indice];
+        ciclos_buffer[ciclos_indice] = linha[indice];
         indice++;
+        ciclos_indice++;
     }
-    ciclos_buffer[indice] = '\0';
+    ciclos_buffer[ciclos_indice] = '\0';
     indice++;
 
+    //("\nbuffer ciclos: %s\n", ciclos_buffer);
     *ciclos = atoi(ciclos_buffer);
 
-    if (strcmp(instrucao_buffer, "load")==0 || strcmp(instrucao_buffer, "LOAD")==0)
+    if (strcmp(instrucao_buffer, "loadm")==0 || strcmp(instrucao_buffer, "LOADM")==0)
     {
         *instrucao = LOAD_MQ;
     }
@@ -545,6 +547,8 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
 
         *numeroLinhas = *numeroLinhas + 1;
     } 
+
+    for (int i=0; i<20; i++) {printf("ciclos_vetor[%i] = %i\n", i, ciclos_vetor[i]);}
 
     do
     {

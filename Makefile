@@ -6,7 +6,7 @@ OBJETOS= main.o ias.o
 # mas uma versão um pouco mais "eficiente" é aprensentada no fim desse arquivo
 
 ias: main.c ias.c ias.h
-	$(COMPILADOR) $< -o $@ $(FLAGS)
+	$(COMPILADOR) $^ -o $@ $(FLAGS)
 
 #%.o: %.c ias.h # todos os arquivos dependem do ias.h
 #	$(COMPILADOR) -c $< -o $@ $(FLAGS) 
