@@ -16,6 +16,8 @@ void dumpDaMemoria(uint8_t *memoria, char nome_arq_saida[]);
 
 void printMemoria(uint8_t* memoria);
 
+void printBits(int64_t n); // Para debug
+
 char *cria_nome_saida(char *nome_entrada);
 
 #endif
