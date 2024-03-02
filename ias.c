@@ -350,12 +350,12 @@ booleano stringEhNumericaOuNula(char* str)
 
 void pegaCiclo (char *linha, Instrucao *instrucao, int *ciclos)
 {
-    printf("\nENTROU NA DESGRAÇA DO PEGA-CICLOS");
+    //printf("\nENTROU NA DESGRAÇA DO PEGA-CICLOS");
     char instrucao_buffer[10], ciclos_buffer[5];
     int indice = 0, ciclos_indice=0;
     instrucao_buffer[indice] = linha[indice];
 
-    printf("\nENTROU NA DESGRAÇA DO PEGA-CICLOS");
+    //printf("\nENTROU NA DESGRAÇA DO PEGA-CICLOS");
 
     while (linha[indice] != ':') // pega a instrução, contida antes do sinal :
     {
@@ -365,7 +365,7 @@ void pegaCiclo (char *linha, Instrucao *instrucao, int *ciclos)
     instrucao_buffer[indice] = '\0';        	
     indice++;
 
-    printf("\n%s.", instrucao_buffer);
+    //printf("\n%s.", instrucao_buffer);
 
     while (linha[indice] != '\0') // pega a quantiade de ciclos, contida antes do fim da string
     {
@@ -491,8 +491,6 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
     uint64_t numero_convertido;
     rewind(arquivoEntrada); // para garantir que irá ser lida as primeiras linhas do arquivo de entrada
 
-    int linhaAtual = 0;
-    
     fgets(linha, 30, arquivoEntrada);
 
     if (linha[strlen(linha) - 1] == '\n')
@@ -506,7 +504,7 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
 
     if (strcmp(linha, "/*") == 0) // verifica, primeiramente, se existe a seção de declaração dos ciclos de clock
     {
-        *numeroLinhas = *numeroLinhas + 1;
+        //linhaAtual = linhaAtual + 1;
         sec_ciclos = True;
     }
 
@@ -538,18 +536,20 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
             Instrucao instrucao;
             int ciclo;
             pegaCiclo(linha, &instrucao, &ciclo);
-            printf("\n%d: %d", instrucao, ciclo);
+            //printf("\n%d: %d", instrucao, ciclo);
             if (instrucao == JUMP_DIR) ciclos_vetor[JUMP_ESQ] = ciclo;
             if (instrucao == JUMPMais_DIR) ciclos_vetor[JUMPMais_ESQ] = ciclo;
             if (instrucao == STOR_MX_DIR) ciclos_vetor[STOR_MX_ESQ] = ciclo;
             ciclos_vetor[instrucao] = ciclo;
         }
 
-        *numeroLinhas = *numeroLinhas + 1;
+        //linhaAtual++;
     } 
 
-    for (int i=0; i<20; i++) {printf("ciclos_vetor[%i] = %i\n", i, ciclos_vetor[i]);}
+    for (int i=0; i<23; i++) printf("ciclos_vetor[%i] = %i\n", i, ciclos_vetor[i]);
 
+    // ATENÇÃO: a primeira linha do arquivo não é a primeira linha da memória, precisa-se guardar dois índices
+    *numeroLinhas = 0;
     do
     {
         fgets(linha, 30, arquivoEntrada);
@@ -570,10 +570,12 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
         }
         else numero_convertido = strtoll(linha, NULL, 10); // converte a string para inteiro
         
-        armazenaNaMemoria(linhaAtual, numero_convertido, memoria); // grava na memória o dado lido
-        linhaAtual += 1;
+        armazenaNaMemoria(*numeroLinhas, numero_convertido, memoria); // grava na memória o dado lido
+        //linhaAtual += 1;
+        *numeroLinhas += 1;
 
     } while (stringEhNumericaOuNula(linha) && (feof(arquivoEntrada) == 0));
+    //*numeroLinhas += 1; // corrige a posição atual na leitura
     /*
         Como o algoritmo tem que ler a linha para saber se é um dado numérico/nulo, o laço acaba sendo finalizado na linha em que a condição é quebrada
         com isso, é necessário retroceder (com o descritor do arquivo de entrada) para a posição de leitura antes da última linha ser processada

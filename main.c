@@ -690,13 +690,14 @@ int main (int argc, char *argv[])
     carregarMemoria(arquivoEntrada, &memoria, &ciclosPorInstrucao);
 
     // simulacao();   
-
+    /*
     for (int i = 0; i < 23; i++)
     {
         printf("%d",ciclosPorInstrucao[i]);
     }
+    */
 
-    //dumpDaMemoria(memoria, argv[2]);
+    dumpDaMemoria(memoria, "out.ias");
         
     free(memoria);
     free(ciclosPorInstrucao);
