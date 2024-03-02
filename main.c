@@ -253,6 +253,7 @@ uint64_t resultado_auxiliar = 0;
 Instrucao instrucao = NENHUMA;
 
 booleano flagTerminou = False;
+booleano flagCongelarTudo = False;
 
 void pipelineBusca()
 {
@@ -293,6 +294,15 @@ void pipelineBusca()
         ladoInstrucao = Esquerdo;
         resultadoBusca = ladoDireito;
         bancoRegistradores.PC =  bancoRegistradores.PC + 1;
+    }
+
+    if (flagCongelarTudo == True)
+    {
+        flagEstagioCongelado[0] = True;
+        flagEstagioCongelado[1] = True;
+        flagEstagioCongelado[2] = True;
+        flagEstagioCongelado[4] = True;
+        flagCongelarTudo = False;
     }
 }
 
@@ -364,6 +374,7 @@ void pipelineBuscaOperandos()
 booleano flagPegarNovoContador = False;
 
 
+
 void pipelineExecucao() 
 {
     // Se a instrução antiga acabou, pegue a quantidade de ciclos de clock para a instrução atual
@@ -395,10 +406,11 @@ void pipelineExecucao()
         printf("\nTicks restantes: %d", contadorClockExecucao);
 
         // Congelando o pipeline
-        flagEstagioCongelado[0] = True;
-        flagEstagioCongelado[1] = True;
-        flagEstagioCongelado[2] = True;
-        flagEstagioCongelado[4] = True;
+        flagCongelarTudo = True;
+        // flagEstagioCongelado[0] = True;
+        // flagEstagioCongelado[1] = True;
+        // flagEstagioCongelado[2] = True;
+        // flagEstagioCongelado[4] = True;
 
         return;
     }
@@ -414,19 +426,35 @@ void pipelineExecucao()
     {
     case ADD_MX:
         printf("\nEX: Soma");
-        bancoRegistradores.AC += dadoParaExecucao;
+        unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
+        unidadeLogicaAritmetica.entrada2 = dadoParaExecucao;
+        unidadeLogicaAritmetica.operacao = soma;
+        executarUla();
+        bancoRegistradores.AC = unidadeLogicaAritmetica.saida;
         break;
     case ADD_ABSMX:
         printf("\nEX: Soma abs");
-        bancoRegistradores.AC += abs(dadoParaExecucao);
+        unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
+        unidadeLogicaAritmetica.entrada2 = abs(dadoParaExecucao);
+        unidadeLogicaAritmetica.operacao = soma;
+        executarUla();
+        bancoRegistradores.AC = unidadeLogicaAritmetica.saida;
         break;
     case SUB_MX:
         printf("\nEX: SUB");
-        bancoRegistradores.AC -= dadoParaExecucao;
+        unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
+        unidadeLogicaAritmetica.entrada2 = dadoParaExecucao;
+        unidadeLogicaAritmetica.operacao = subtracao;
+        executarUla();
+        bancoRegistradores.AC = unidadeLogicaAritmetica.saida;
         break;
     case SUB_ABSMX:
         printf("\nEX: SUB ABS");
-        bancoRegistradores.AC -= abs(dadoParaExecucao);
+        unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
+        unidadeLogicaAritmetica.entrada2 = abs(dadoParaExecucao);
+        unidadeLogicaAritmetica.operacao = soma;
+        executarUla();
+        bancoRegistradores.AC = unidadeLogicaAritmetica.saida;
         break;
     case JUMPMais_DIR:
         printf("\nEX: JUMP+ DIR");
@@ -440,6 +468,7 @@ void pipelineExecucao()
         limparPipeline();
         ladoInstrucao = Direito;
         instrucao = NENHUMA;
+        printf("\n\nJUMP FEITO\n\n");
         break;
     case JUMPMais_ESQ:
         printf("\nEX: JUMP+ ESQ");
@@ -453,6 +482,7 @@ void pipelineExecucao()
         limparPipeline();
         ladoInstrucao = Esquerdo;
         instrucao = NENHUMA;
+        printf("\n\nJUMP FEITO\n\n");
         break;
     case RSH:
         printf("\nEX: RSH");
@@ -677,7 +707,7 @@ void limparPipeline()
     dadoParaExecucao = 0;
     operacaoASerExecutada = NENHUMA;
 
-    flagPegarNovoContador = True;
+    flagPegarNovoContador = False;
 
     opcodeDecodificado = NENHUMA;
     enderecoDecodificado = 0;
@@ -689,6 +719,8 @@ void limparPipeline()
     flagEstagioCongelado[2] = False;
     flagEstagioCongelado[3] = False;
     flagEstagioCongelado[4] = False;
+
+    flagCongelarTudo = False;
 }
 
 int main (int argc, char *argv[])
