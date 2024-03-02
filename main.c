@@ -697,7 +697,9 @@ int main (int argc, char *argv[])
     }
     */
 
-    dumpDaMemoria(memoria, "out.ias");
+    char *novo_nome = cria_nome_saida(argv[2]);
+
+    dumpDaMemoria(memoria, novo_nome);
         
     free(memoria);
     free(ciclosPorInstrucao);

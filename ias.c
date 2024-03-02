@@ -60,6 +60,7 @@ booleano comecaCom(char* palavra, char* prefixo);
 booleano terminaCom(char* palavra, char* sufixo);
 void converteInstrucao(char* instrucao, char* opcode, int* endereco);
 void completaMemoria (int PC, uint8_t *memoria);
+char *cria_nome_saida(char *nome_entrada);
 // *******************************************************************
 
 void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor)
@@ -970,4 +971,20 @@ void printMemoria(uint8_t* memoria)
         printf("%d: ", i);
         printBits(palavra);
     }
+}
+
+char *cria_nome_saida(char *nome_entrada)
+{
+    int tamanho = strlen(nome_entrada);
+    printf("tamanho: %i\n", tamanho);
+    
+    int novo_tamanho = tamanho+4;
+    char *nome_saida = malloc(novo_tamanho); //tamanho do nome de entrada mais 4
+    for (int i=0; i<tamanho; i++) nome_saida[i] = nome_entrada[i];
+    nome_saida[tamanho] = '.';
+    nome_saida[tamanho+1] = 'o';
+    nome_saida[tamanho+2] = 'u';
+    nome_saida[tamanho+3] = 't';
+    nome_saida[tamanho+4] = '\0';
+    return nome_saida;
 }
