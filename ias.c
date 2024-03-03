@@ -351,12 +351,9 @@ booleano stringEhNumericaOuNula(char* str)
 
 void pegaCiclo (char *linha, Instrucao *instrucao, int *ciclos)
 {
-    //printf("\nENTROU NA DESGRAÇA DO PEGA-CICLOS");
     char instrucao_buffer[10], ciclos_buffer[5];
     int indice = 0, ciclos_indice=0;
     instrucao_buffer[indice] = linha[indice];
-
-    //printf("\nENTROU NA DESGRAÇA DO PEGA-CICLOS");
 
     while (linha[indice] != ':') // pega a instrução, contida antes do sinal :
     {
@@ -749,7 +746,7 @@ void converteInstrucao(char* instrucao, char* opcode, int* endereco)
 
         Em caso de erro (instrução não reconhecida), retorna "00000000" para o opcode e -1 para o endereço
     */
-    if (comecaCom(instrucao,"LOAD MQ,M("))
+    if (comecaCom(instrucao,"LOAD MQ,M(") || comecaCom(instrucao,"LOAD MQ, M("))
     {
         // Opcode: 00001001 (9)
         // Inicio endereço: posicao 10
