@@ -334,11 +334,13 @@ void pipelineBuscaOperandos()
     {
         if (enderecoDecodificado == enderecoRAW)
         {
-           // printf("\nDEPENDÊNCIA RAW!!! INSERINDO BOLHA");
+            printf("\nDEPENDENCIA RAW!!! INSERINDO BOLHA");
             // Inserindo bolha
-            opcodeDecodificado = NENHUMA;
+            operacaoASerExecutada = NENHUMA;
             flagEstagioCongelado[0] = True;
             flagEstagioCongelado[1] = True;
+            dependenciaRAW = False;
+            return;
         }
     }
 
@@ -363,7 +365,6 @@ void pipelineBuscaOperandos()
     }
 
     operacaoASerExecutada = opcodeDecodificado;
-    printf("\nOperacao a ser executada: %d", operacaoASerExecutada);
 }
 
 
@@ -374,7 +375,6 @@ void pipelineExecucao()
 {
     if (flagPegarNovoContador == True)
     {
-        printf("\nPegando novo contador");
         contadorClockExecucao = ciclosPorInstrucao[operacaoASerExecutada];
         switch (operacaoASerExecutada)
         {
