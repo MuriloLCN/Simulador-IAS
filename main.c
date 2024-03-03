@@ -272,7 +272,7 @@ void pipelineBusca()
     executarBarramento();
 
     printf("Barramento saida: %i\n", barramento.saida);
-    abort();
+    //abort();
 
     uint64_t enderecoBuscado = barramento.saida;
 
@@ -775,8 +775,8 @@ int main (int argc, char *argv[])
     
     carregarMemoria(arquivoEntrada, &memoria, &ciclosPorInstrucao);
     char *novo_nome = cria_nome_saida(argv[2]);
-    dumpDaMemoria(memoria, novo_nome);
-    //simulacao();   
+    //dumpDaMemoria(memoria, novo_nome);
+    simulacao();   
 
     
 

@@ -18,9 +18,9 @@ lsh:15
 rsh:16
 storm:17
 */
-1 -- 1
-5 -- N
-0 -- RESULTADO
+1
+5
+1
 LOAD M(1)
 STOR M(2)
 LOAD M(1)
@@ -34,5 +34,5 @@ MUL M(1)
 LOAD MQ
 STOR M(2)
 JUMP M(4)
-RSH -- ALINHAMENTO
+RSH 
 EXIT

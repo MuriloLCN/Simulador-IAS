@@ -586,7 +586,7 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
         printf("Eh numero: %i\n", stringEhNumericaOuNula(linha));
     }
     printf("Saindo dos numeros linha %i\n", *numeroLinhas);
-    *numeroLinhas -= 1; // corrige a posição atual na leitura
+    //*numeroLinhas -= 1; // corrige a posição atual na leitura
     /*
         Como o algoritmo tem que ler a linha para saber se é um dado numérico/nulo, o laço acaba sendo finalizado na linha em que a condição é quebrada
         com isso, é necessário retroceder (com o descritor do arquivo de entrada) para a posição de leitura antes da última linha ser processada
