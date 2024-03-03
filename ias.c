@@ -324,8 +324,10 @@ int64_t converteDado(uint64_t entrada)
 
 booleano stringEhNumericaOuNula(char* str)
 {
+    
     for (int i = 0; i < strlen(str); i++)
     {
+        printf("* %c - %i * ", str[i], str[i]);
         switch (str[i])
         {
         case '-':
@@ -570,6 +572,7 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
         armazenaNaMemoria(*numeroLinhas, numero_convertido, memoria); // grava na memória o dado lido
         //linhaAtual += 1;
         *numeroLinhas += 1;
+        printf("Leitura: %s\n", linha);
         fgets(linha, 30, arquivoEntrada);
         if (linha[strlen(linha) - 1] == '\n')
         {
@@ -579,6 +582,8 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
         {
             linha[strlen(linha) - 1] = '\0';
         }
+        printf("Leitura2: %s\n", linha);
+        printf("Eh numero: %i\n", stringEhNumericaOuNula(linha));
     }
     printf("Saindo dos numeros linha %i\n", *numeroLinhas);
     *numeroLinhas -= 1; // corrige a posição atual na leitura

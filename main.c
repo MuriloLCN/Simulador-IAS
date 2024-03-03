@@ -271,6 +271,9 @@ void pipelineBusca()
     barramento.operacao = ler;
     executarBarramento();
 
+    printf("Barramento saida: %i\n", barramento.saida);
+    abort();
+
     uint64_t enderecoBuscado = barramento.saida;
 
 
@@ -626,6 +629,7 @@ void executarBarramento()
     if (barramento.operacao == ler)
     {
         uint64_t res = buscaNaMemoria(memoria, barramento.endereco);
+        printf("Leitura interna barramento: %i\n", res);
         barramento.saida = res;
     }
     else 
@@ -752,7 +756,7 @@ int main (int argc, char *argv[])
     bancoRegistradores.AC = 0;
     bancoRegistradores.MQ = 0;
     bancoRegistradores.MBR = 0;
-    bancoRegistradores.PC = 4;
+    bancoRegistradores.PC = 3;
     bancoRegistradores.MAR = 0;
     bancoRegistradores.IBR = 0;
     bancoRegistradores.IR = 0;
@@ -770,12 +774,13 @@ int main (int argc, char *argv[])
     barramento.saida = 0;
     
     carregarMemoria(arquivoEntrada, &memoria, &ciclosPorInstrucao);
-
-    simulacao();   
-
     char *novo_nome = cria_nome_saida(argv[2]);
-
     dumpDaMemoria(memoria, novo_nome);
+    //simulacao();   
+
+    
+
+    //dumpDaMemoria(memoria, novo_nome);
         
     free(memoria);
     free(ciclosPorInstrucao);
