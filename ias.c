@@ -61,6 +61,7 @@ booleano terminaCom(char* palavra, char* sufixo);
 void converteInstrucao(char* instrucao, char* opcode, int* endereco);
 void completaMemoria (int PC, uint8_t *memoria);
 char *cria_nome_saida(char *nome_entrada);
+void tratamento_string(char *linha);
 // *******************************************************************
 
 void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor)
@@ -105,13 +106,17 @@ void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor
             instrucao[strlen(instrucao) - 1] = '\0';
         }
 
+        printf("Intrucao lida: %s\n", instrucao);
+
         // dada a linha de instrução, é devolvida a string que representa o opcode e o local da memória onde será realizado aquela operação
         converteInstrucao(instrucao, opcodeString, &endereco); 
 
         int opcodeInt = stringParaInt(opcodeString);
 
+
         if (opcodeInt == 255 && controle == False) // se leu a última instrução e não há instrução da direita (número de instruções ímpar)
         {
+            //printf("\n\nopcodeint final: %i\nPosicao %i\n", opcodeInt, PC);
             uint64_t word = montaLinhaDeInstrucao(opcodeInt, endereco, 0, 0);
             armazenaNaMemoria(PC, word, *memoria);
             PC++;
@@ -120,7 +125,7 @@ void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor
         
         else 
         {
-            if (!controle)
+            if (controle == False)
             {
                 // Caso a instrução lida tenha que ir na esquerda da seção de memória
                 opcodeEsquerdo = opcodeInt;
@@ -490,6 +495,7 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
     booleano sec_ciclos = False;
     uint64_t numero_convertido;
     rewind(arquivoEntrada); // para garantir que irá ser lida as primeiras linhas do arquivo de entrada
+    FILE ultima_leitura; // o algoritmo só para de ler os números quando encontra uma instrução, então é necessário voltar uma linha no descritor para que a leirura das strings seja feita corretamente
 
     fgets(linha, 30, arquivoEntrada);
 
@@ -551,6 +557,8 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
     *numeroLinhas = 0;
 
     fgets(linha, 30, arquivoEntrada);
+    tratamento_string(linha);
+    /*
     if (linha[strlen(linha) - 1] == '\n')
     {
         linha[strlen(linha) - 1] = '\0';
@@ -559,6 +567,7 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
     {
         linha[strlen(linha) - 1] = '\0';
     }
+    */
     
     while (stringEhNumericaOuNula(linha) && (feof(arquivoEntrada) == 0))
     {
@@ -573,7 +582,10 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
         //linhaAtual += 1;
         *numeroLinhas += 1;
         printf("Leitura: %s\n", linha);
+        ultima_leitura = *arquivoEntrada;
         fgets(linha, 30, arquivoEntrada);
+        tratamento_string(linha);
+        /*
         if (linha[strlen(linha) - 1] == '\n')
         {
             linha[strlen(linha) - 1] = '\0';
@@ -582,9 +594,11 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
         {
             linha[strlen(linha) - 1] = '\0';
         }
+        */
         printf("Leitura2: %s\n", linha);
         printf("Eh numero: %i\n", stringEhNumericaOuNula(linha));
     }
+    *arquivoEntrada = ultima_leitura;
     printf("Saindo dos numeros linha %i\n", *numeroLinhas);
     //*numeroLinhas -= 1; // corrige a posição atual na leitura
     /*
@@ -989,4 +1003,18 @@ char *cria_nome_saida(char *nome_entrada)
     nome_saida[tamanho+3] = 't';
     nome_saida[tamanho+4] = '\0';
     return nome_saida;
+}
+
+void tratamento_string(char *linha)
+{
+/*
+    Como a leitura da linha pode conter conteúdo indesejado, como espaços no fim ou um \n, 
+    é necessário fazer um tratamento para deixá-la em um formato padronizado de processamento.
+    Entrada: char *linha - string lida em uma linha do arquivo de instruções
+*/    
+    int tamanho = strlen(linha);
+    int i = 0;
+    while ((linha[i] != ' ') && (i < tamanho)) i++; // percorre o vetor da linha até encontrar um espaço ou chegar no fim
+    if (i == tamanho) linha[i-1] = '\0'; // se chegou no fim, então não houve espaço e o procedimento é apenas colocar o \0 no lugar do \n ou \r
+    else linha[i] = '\0'; // se não chegou no fim, então houve espaço, portanto deve-se colocar o \0 na posição do espaço, finalizando ali a string
 }
