@@ -780,7 +780,7 @@ int main (int argc, char *argv[])
 
     
 
-    //dumpDaMemoria(memoria, novo_nome);
+    dumpDaMemoria(memoria, novo_nome);
         
     free(memoria);
     free(ciclosPorInstrucao);

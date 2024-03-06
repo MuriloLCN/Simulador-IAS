@@ -106,8 +106,6 @@ void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor
             instrucao[strlen(instrucao) - 1] = '\0';
         }
 
-        printf("Intrucao lida: %s\n", instrucao);
-
         // dada a linha de instrução, é devolvida a string que representa o opcode e o local da memória onde será realizado aquela operação
         converteInstrucao(instrucao, opcodeString, &endereco); 
 
@@ -134,10 +132,12 @@ void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor
             }
             else
             {
+                printf("\nprimeiro: %i, %i, pc=%i\n", opcodeEsquerdo, enderecoEsquerdo, PC);
+                
                 // Caso a instrução lida tenha que ir na direita da seção de memória, monta a linha e armazena
                 int64_t word = montaLinhaDeInstrucao(opcodeEsquerdo, enderecoEsquerdo, opcodeInt, endereco);
                 armazenaNaMemoria(PC, word, *memoria);
-                // fprintf(arquivoSaida, "%"PRId64"\n", word);
+                uint64_t teste = buscaNaMemoria(*memoria, PC);
                 PC++;
                 controle = False;
             }
