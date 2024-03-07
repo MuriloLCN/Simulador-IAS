@@ -255,6 +255,16 @@ Instrucao instrucao = NENHUMA;
 booleano flagTerminou = False;
 booleano flagCongelarTudo = False;
 
+// Um jump após um load dá um caso de dependência pois depende de AC
+// Exemplo:
+// LOAD M(0)
+// JUMP+ M(999, 0:19)
+booleano dependenciaJump = False;
+
+/*
+    TODO: Simular outros registradores também
+*/
+
 void pipelineBusca()
 {
     // Lê o lugar de memória dito por PC (lembrando que pode ser esquerdo ou direito tbm)
@@ -262,17 +272,12 @@ void pipelineBusca()
 
     if (flagEstagioCongelado[0] == True)
     {
-        //printf("\nBusca congelada!");
         return;
     }
 
-    //printf("\nExecutando busca");
     barramento.endereco = bancoRegistradores.PC;
     barramento.operacao = ler;
     executarBarramento();
-
-    printf("Barramento saida: %i\n", barramento.saida);
-    //abort();
 
     uint64_t enderecoBuscado = barramento.saida;
 
@@ -282,15 +287,11 @@ void pipelineBusca()
 
     if (ladoInstrucao == Esquerdo)
     {
-        //printf("\nlado esquerdo");
-        // bancoRegistradores.IBR = ladoDireito;
-        
         resultadoBusca = ladoEsquerdo;
         ladoInstrucao = Direito;
     }
     else 
     {
-        //printf("\nlado direito");
         ladoInstrucao = Esquerdo;
         resultadoBusca = ladoDireito;
         bancoRegistradores.PC =  bancoRegistradores.PC + 1;
@@ -311,7 +312,6 @@ void pipelineDecodificacao()
 {
     if (flagEstagioCongelado[1] == True)
     {
-        //printf("\nDecod. congelada!");
         return;
     }
     uint64_t opcode;
@@ -329,7 +329,6 @@ void pipelineBuscaOperandos()
 {
     if (flagEstagioCongelado[2] == True)
     {
-        //printf("\nBusca op. congelada!");
         return;
     }
 
@@ -347,16 +346,35 @@ void pipelineBuscaOperandos()
         }
     }
 
+    if (dependenciaJump == True)
+    {
+        switch (opcodeDecodificado)
+        {
+        case JUMPMais_DIR:
+        case JUMPMais_ESQ:
+            printf("\nDependencia jump!! Inserindo bolha");
+            operacaoASerExecutada = NENHUMA;
+            flagEstagioCongelado[0] = True;
+            flagEstagioCongelado[1] = True;
+            dependenciaJump = False;
+            break;
+        
+        default:
+            break;
+        }
+    }
+
     switch (opcodeDecodificado)
     {
         case NENHUMA:
-            //printf("\nOpcode era nenhum");
-            // dadoParaExecucao = 0;
             break;
         case STOR_MX:
         case STOR_MX_DIR:
         case STOR_MX_ESQ:
-            //printf("\nOpcode era de um stor");
+        case JUMP_DIR:
+        case JUMP_ESQ:
+        case JUMPMais_DIR:
+        case JUMPMais_ESQ:
             dadoParaExecucao = enderecoDecodificado;
             break;
         default:
@@ -391,6 +409,20 @@ void pipelineExecucao()
                 dependenciaRAW = False;
                 break;
         }
+
+        switch (operacaoASerExecutada)
+        {
+            case LOAD_ABSMX:
+            case LOAD_MenosABSMX:
+            case LOAD_MenosMX:
+            case LOAD_MQ:
+            case LOAD_MQ_MX:
+            case LOAD_MX:
+                dependenciaJump = True;
+                break;
+            default:
+                dependenciaJump = False;
+        }
         flagPegarNovoContador = False;
         flagCongelarTudo = True;
     }
@@ -411,13 +443,11 @@ void pipelineExecucao()
     flagPegarNovoContador = True;
 
     // Liberando o pipeline
-    //printf("\nLiberando a escrita de resultados");
     flagEstagioCongelado[4] = False;
 
     switch (operacaoASerExecutada)
     {
     case ADD_MX:
-        // printf("\nEX: Soma");
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
         unidadeLogicaAritmetica.entrada2 = dadoParaExecucao;
         unidadeLogicaAritmetica.operacao = soma;
@@ -425,7 +455,6 @@ void pipelineExecucao()
         resultado = unidadeLogicaAritmetica.saida;
         break;
     case ADD_ABSMX:
-        // printf("\nEX: Soma abs");
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
         unidadeLogicaAritmetica.entrada2 = abs(dadoParaExecucao);
         unidadeLogicaAritmetica.operacao = soma;
@@ -433,7 +462,6 @@ void pipelineExecucao()
         resultado = unidadeLogicaAritmetica.saida;
         break;
     case SUB_MX:
-        // printf("\nEX: SUB");
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
         unidadeLogicaAritmetica.entrada2 = dadoParaExecucao;
         unidadeLogicaAritmetica.operacao = subtracao;
@@ -441,82 +469,55 @@ void pipelineExecucao()
         resultado = unidadeLogicaAritmetica.saida;
         break;
     case SUB_ABSMX:
-        // printf("\nEX: SUB ABS");
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
         unidadeLogicaAritmetica.entrada2 = abs(dadoParaExecucao);
         unidadeLogicaAritmetica.operacao = soma;
         executarUla();
         resultado = unidadeLogicaAritmetica.saida;
         break;
-    case JUMPMais_DIR:
-        // printf("\nEX: JUMP+ DIR");
-        if (bancoRegistradores.AC < 0)
-        {
-            break;
-        }
     case JUMP_DIR:
-        // printf("\nEX: JUMP DIR");
         bancoRegistradores.PC = (int) dadoParaExecucao;
         limparPipeline();
         ladoInstrucao = Direito;
         instrucao = NENHUMA;
-        // printf("\n\nJUMP FEITO\n\n");
         break;
-    case JUMPMais_ESQ:
-        // printf("\nEX: JUMP+ ESQ");
-        if (bancoRegistradores.AC < 0)
-        {
-            break;
-        }
     case JUMP_ESQ:
-        // printf("\nEX: JUMP ESQ");
         bancoRegistradores.PC = (int) dadoParaExecucao;
         limparPipeline();
         ladoInstrucao = Esquerdo;
         instrucao = NENHUMA;
-        // printf("\n\nJUMP FEITO\n\n");
         break;
     case RSH:
-        // printf("\nEX: RSH");
         resultado = bancoRegistradores.AC / 2;
         break;
     case LSH:
-        // printf("\nEX: LSH");
         resultado = bancoRegistradores.AC * 2;
         break;
     case DIV_MX:
-        // printf("\nEX: DIV");
         resultado = bancoRegistradores.AC % dadoParaExecucao;
         resultado_auxiliar = bancoRegistradores.AC / dadoParaExecucao;
         break;
     case MUL_MX:
-        // printf("\nEX: MUL");
         resultado = (dadoParaExecucao * bancoRegistradores.MQ) >> 39;
         resultado_auxiliar = (dadoParaExecucao * bancoRegistradores.MQ) & 0b111111111111111111111111111111111111111;
         break;
     case LOAD_ABSMX:
-        // printf("\nEX: LOAD ABS");
         resultado = abs(dadoParaExecucao);
         break;
     case LOAD_MenosABSMX:
-        // printf("\nEX: LOD -ABS");
         resultado = -1 * abs(dadoParaExecucao);
         break;
     case LOAD_MenosMX:
-        // printf("\nEX: LOAD MENOS");
         resultado = -1 * dadoParaExecucao;
         break;
     case LOAD_MQ_MX:
     case LOAD_MX:
-        // printf("\nEX: LOAD OU LOAD MQ");
         resultado = dadoParaExecucao;
         break;
     case STOR_MX:
-        // printf("\nEX: STOR");
         resultado = dadoParaExecucao;
         break;
     case STOR_MX_ESQ:
-        // printf("\nEX: STOR ESQ");
         barramento.operacao = ler;
         barramento.endereco = dadoParaExecucao;
         executarBarramento();
@@ -529,7 +530,6 @@ void pipelineExecucao()
         // executarBarramento();
         break;
     case STOR_MX_DIR:
-        // printf("\nEX: STOR DIR");
         barramento.operacao = ler;
         barramento.endereco = dadoParaExecucao;
         executarBarramento();
@@ -541,14 +541,32 @@ void pipelineExecucao()
         // barramento.entrada = (barramento.saida & 0b1111111111111111111111111111000000000000) | bancoRegistradores.AC;
         // executarBarramento();
     case EXIT:
-        // printf("\nEX: EXIT");
         flagTerminou = True;
         break;
     case NENHUMA:
     case LOAD_MQ:
     default:
-        // printf("\nEXEC: Nada feito");
         break;
+    }
+
+    // Casos com IF tem que ficar fora do switch
+    if (operacaoASerExecutada == JUMPMais_DIR && (int64_t) bancoRegistradores.AC >= 0)
+    {
+        printf("\nOperacao era um jump dir e o AC era maior que zero: %d", bancoRegistradores.AC);
+        bancoRegistradores.PC = (int) dadoParaExecucao;
+        limparPipeline();
+        ladoInstrucao = Direito;
+        instrucao = NENHUMA;
+        printf("\n\nJUMP FEITO\n\n");
+    }
+
+    if (operacaoASerExecutada == JUMPMais_ESQ && (int64_t) bancoRegistradores.AC >= 0)
+    {
+        printf("\nOperacao era um jump esq e o AC era maior que zero: %d", bancoRegistradores.AC);
+        bancoRegistradores.PC = (int) dadoParaExecucao;
+        limparPipeline();
+        ladoInstrucao = Esquerdo;
+        instrucao = NENHUMA;
     }
 
     printf("\nOperacao feita: %d   resultado: %d   resultado_aux: %d", instrucao, resultado, resultado_auxiliar);
@@ -629,7 +647,6 @@ void executarBarramento()
     if (barramento.operacao == ler)
     {
         uint64_t res = buscaNaMemoria(memoria, barramento.endereco);
-        printf("Leitura interna barramento: %i\n", res);
         barramento.saida = res;
     }
     else 
@@ -674,28 +691,10 @@ void simulacao()
     
     while (flagTerminou != True)
     {
-        //printf("\n--------------------------------");
-        //printf("\nFazendo a escrita de resultados");
-        //printf("\nEntradas: %d %d %d", resultado, resultado_auxiliar, instrucao);
         pipelineEscritaResultados();
-        ///printf("\n----------------");
-        ///printf("\nFazendo a execucao");
-        ///printf("\nEntradas: %d %d", operacaoASerExecutada, dadoParaExecucao);
         pipelineExecucao();
-        ///printf("\nSaidas: %d %d %d", resultado, resultado_auxiliar, instrucao);
-        ///printf("\n----------------");
-        ///printf("\nFazendo a busca de operandos");
-        //printf("\nEntradas: %d %d", opcodeDecodificado, enderecoDecodificado);
         pipelineBuscaOperandos();
-        ///printf("\nSaidas: %d %d", operacaoASerExecutada, dadoParaExecucao);
-        ///printf("\n----------------");
-        ///printf("\nFazendo a decodificacao");
-        //printf("\nEntrada: %d", resultadoBusca);
         pipelineDecodificacao();
-        ///printf("\nSaidas: %d %d", opcodeDecodificado, enderecoDecodificado);
-        ///printf("\n----------------");
-        ///printf("\nFazendo a busca, PC = %d", bancoRegistradores.PC);
-        //printf("\nSaida: %d", resultadoBusca);
         pipelineBusca();
 
         // printf("\nAC: %d  MQ: %d", bancoRegistradores.AC, bancoRegistradores.MQ);
@@ -756,7 +755,7 @@ int main (int argc, char *argv[])
     bancoRegistradores.AC = 0;
     bancoRegistradores.MQ = 0;
     bancoRegistradores.MBR = 0;
-    bancoRegistradores.PC = 3;
+    bancoRegistradores.PC = 4;
     bancoRegistradores.MAR = 0;
     bancoRegistradores.IBR = 0;
     bancoRegistradores.IR = 0;
@@ -788,3 +787,46 @@ int main (int argc, char *argv[])
     return 0;
     
 }
+
+/*
+Testes:
+
+Instruções provavelmente OK:
+LOAD MQ, MX
+STOR MX
+LOAD MX
+LOAD_MQ, 
+LSH,
+RSH,
+ADD MX
+EXIT
+NENHUMA
+LOAD |MX|
+LOAD- MX
+LOAD- |MX|
+ADD |MX|
+SUB |MX|
+
+Instruções parcialmente OK (faltam mais testes mas não apresentaram problemas):
+MUL MX
+
+Instruções não OK:
+DIV_MX
+
+Instruções não testadas ainda:
+JUMP_ESQ,
+JUMP_DIR,
+JUMPMais_ESQ,
+JUMPMais_DIR
+STOR_MX_ESQ,
+STOR_MX_DIR, 
+
+Coisas estranhas:
+> Guardar números negativos
+
+
+Problemas:
+> Divisão com números negativos
+
+
+*/
