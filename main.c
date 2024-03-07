@@ -418,6 +418,14 @@ void pipelineExecucao()
             case LOAD_MQ:
             case LOAD_MQ_MX:
             case LOAD_MX:
+            case MUL_MX:
+            case DIV_MX:
+            case ADD_MX:
+            case ADD_ABSMX:
+            case SUB_MX:
+            case SUB_ABSMX:
+            case LSH:
+            case RSH:
                 dependenciaJump = True;
                 break;
             default:
@@ -795,9 +803,9 @@ Instruções provavelmente OK:
 LOAD MQ, MX
 STOR MX
 LOAD MX
-LOAD_MQ, 
-LSH,
-RSH,
+LOAD MQ, 
+LSH, <-- testar com negativos
+RSH, <-- testar com negativos
 ADD MX
 EXIT
 NENHUMA

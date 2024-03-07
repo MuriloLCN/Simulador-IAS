@@ -22,8 +22,10 @@ storm:17
 0
 2
 -2
-LOAD- M(0)
-JUMP+ M(5,20:39)
+LOAD M(2)
+ADD M(3)
+ADD M(3)
+JUMP+ M(7,20:39)
 STOR M(1)
 LOAD M(2)
 STOR M(3)
