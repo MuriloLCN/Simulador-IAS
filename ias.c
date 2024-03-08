@@ -132,12 +132,11 @@ void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor
             }
             else
             {
-                printf("\nprimeiro: %i, %i, pc=%i\n", opcodeEsquerdo, enderecoEsquerdo, PC);
+                //printf("\nprimeiro: %i, %i, pc=%i\n", opcodeEsquerdo, enderecoEsquerdo, PC);
                 
                 // Caso a instrução lida tenha que ir na direita da seção de memória, monta a linha e armazena
                 int64_t word = montaLinhaDeInstrucao(opcodeEsquerdo, enderecoEsquerdo, opcodeInt, endereco);
                 armazenaNaMemoria(PC, word, *memoria);
-                uint64_t teste = buscaNaMemoria(*memoria, PC);
                 PC++;
                 controle = False;
             }
@@ -602,7 +601,7 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
         armazenaNaMemoria(*numeroLinhas, numero_convertido, memoria); // grava na memória o dado lido
         //linhaAtual += 1;
         *numeroLinhas += 1;
-        printf("Leitura: %s\n", linha);
+        //printf("Leitura: %s\n", linha);
         ultima_leitura = *arquivoEntrada;
         fgets(linha, 30, arquivoEntrada);
         tratamento_string(linha);
@@ -616,8 +615,8 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
             linha[strlen(linha) - 1] = '\0';
         }
         */
-        printf("Leitura2: %s\n", linha);
-        printf("Eh numero: %i\n", stringEhNumericaOuNula(linha));
+        //printf("Leitura2: %s\n", linha);
+        //printf("Eh numero: %i\n", stringEhNumericaOuNula(linha));
     }
     *arquivoEntrada = ultima_leitura;
     printf("Saindo dos numeros linha %i\n", *numeroLinhas);
@@ -786,12 +785,14 @@ void converteInstrucao(char* instrucao, char* opcode, int* endereco)
 
         Em caso de erro (instrução não reconhecida), retorna "00000000" para o opcode e -1 para o endereço
     */
-    if (comecaCom(instrucao,"LOAD MQ,M(") || comecaCom(instrucao,"LOAD MQ, M("))
+    if (comecaCom(instrucao,"LOAD MQ,"))
     {
         // Opcode: 00001001 (9)
         // Inicio endereço: posicao 10
         strcpy(opcode, "00001001");
-        *endereco = pegaParametroInstrucao(instrucao, 10);
+        //devido as diferenças no espaçamento, pode ser necessário um espaço a mais para o início do endereço
+        if (comecaCom(instrucao, "LOAD MQ,M(")) *endereco = pegaParametroInstrucao(instrucao, 10);
+        else if (comecaCom(instrucao,"LOAD MQ, M(")) *endereco = pegaParametroInstrucao(instrucao, 11);
     }
     else if (comecaCom(instrucao,"LOAD MQ"))
     {
