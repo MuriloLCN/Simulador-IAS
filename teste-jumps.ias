@@ -22,19 +22,19 @@ storm:17
 7
 7
 7
-LOAD M(1)
+LOAD M(1) # 4
 JUMP+ M(9, 0:19)
-SUB M(0)
-STOR M(2)
-LOAD M(3)
+SUB M(0) # 5
+STOR M(2) 
+LOAD M(3) # 6
 JUMP M(7, 0:19)
-SUB M(0)
-STORE M(3)
-LOAD M(3)
+SUB M(0) # 7
+STOR M(3)
+LOAD M(3) # 8
 JUMP M(11, 20:39)
-SUB M(0)
+SUB M(0) # 9
 STOR M(1)
-LOAD M(1)
+LOAD M(1) # 10
 JUMP+ M(5, 20:39)
-LSH
+LSH # 11
 EXIT

@@ -275,6 +275,8 @@ void pipelineBusca()
         return;
     }
 
+    printf("\nBuscando dado do PC = %d", bancoRegistradores.PC);
+
     barramento.endereco = bancoRegistradores.PC;
     barramento.operacao = ler;
     executarBarramento();
@@ -296,6 +298,9 @@ void pipelineBusca()
         resultadoBusca = ladoDireito;
         bancoRegistradores.PC =  bancoRegistradores.PC + 1;
     }
+
+    //printf("\nResultado busca: ");
+    //printBits(resultadoBusca);
 
 
     if (flagCongelarTudo == True)
@@ -320,6 +325,8 @@ void pipelineDecodificacao()
     opcode = (resultadoBusca & 0b11111111000000000000) >> 12;
 
     endereco = resultadoBusca & 0b111111111111;
+
+    
 
     opcodeDecodificado = opCodeParaInstrucao(opcode);
     enderecoDecodificado = endereco;
@@ -492,16 +499,18 @@ void pipelineExecucao()
         break;
     case JUMP_DIR:
         bancoRegistradores.PC = (int) dadoParaExecucao;
+        printf("\nPulando para o endereco direito de %d", bancoRegistradores.PC);
         limparPipeline();
         ladoInstrucao = Direito;
         instrucao = NENHUMA;
-        break;
+        break;;
     case JUMP_ESQ:
         bancoRegistradores.PC = (int) dadoParaExecucao;
+        printf("\nPulando para o endereco esquerdo de %d", bancoRegistradores.PC);
         limparPipeline();
         ladoInstrucao = Esquerdo;
         instrucao = NENHUMA;
-        break;
+        break;;
     case RSH:
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
         unidadeLogicaAritmetica.operacao = shiftParaDireita;
@@ -577,7 +586,7 @@ void pipelineExecucao()
     }
 
     // Casos com IF tem que ficar fora do switch
-    if (operacaoASerExecutada == JUMPMais_DIR && (int64_t) bancoRegistradores.AC >= 0)
+    if ((operacaoASerExecutada == JUMPMais_DIR && (int64_t) bancoRegistradores.AC >= 0))  // || operacaoASerExecutada == JUMP_DIR)
     {
         printf("\nOperacao era um jump dir e o AC era maior que zero: %d", bancoRegistradores.AC);
         bancoRegistradores.PC = (int) dadoParaExecucao;
@@ -587,7 +596,7 @@ void pipelineExecucao()
         printf("\n\nJUMP FEITO\n\n");
     }
 
-    if (operacaoASerExecutada == JUMPMais_ESQ && (int64_t) bancoRegistradores.AC >= 0)
+    if ((operacaoASerExecutada == JUMPMais_ESQ && (int64_t) bancoRegistradores.AC >= 0))  // || operacaoASerExecutada == JUMP_ESQ)
     {
         printf("\nOperacao era um jump esq e o AC era maior que zero: %d", bancoRegistradores.AC);
         bancoRegistradores.PC = (int) dadoParaExecucao;
@@ -730,6 +739,7 @@ void simulacao()
 
 void limparPipeline()
 {
+    //printf("\nPIPELINE LIMPO");
     resultado = 0;
     resultado_auxiliar = 0;
     instrucao = NENHUMA;
@@ -782,7 +792,7 @@ int main (int argc, char *argv[])
     bancoRegistradores.AC = 0;
     bancoRegistradores.MQ = 0;
     bancoRegistradores.MBR = 0;
-    bancoRegistradores.PC = 2;
+    bancoRegistradores.PC = 4;
     bancoRegistradores.MAR = 0;
     bancoRegistradores.IBR = 0;
     bancoRegistradores.IR = 0;
