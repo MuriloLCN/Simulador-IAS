@@ -381,10 +381,9 @@ void pipelineBuscaOperandos()
             barramento.endereco = enderecoDecodificado;
             barramento.operacao = ler;
             executarBarramento();
-            dadoParaExecucao = barramento.saida;
+            dadoParaExecucao = converteDado(barramento.saida);
             break;
     }
-
     operacaoASerExecutada = opcodeDecodificado;
 }
 
@@ -446,6 +445,8 @@ void pipelineExecucao()
         //flagEstagioCongelado[4] = True;
         return;
     }
+
+    resultado_auxiliar = 0;
 
     instrucao = operacaoASerExecutada;
     flagPegarNovoContador = True;
