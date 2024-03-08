@@ -234,6 +234,7 @@ booleano dependenciaRAW = False;
 
 // Indica o endereço que foi feita a escrita
 int enderecoRAW = 0;
+int pcAlterado = 0;
 
 Lado ladoInstrucao = Esquerdo;
 
@@ -261,9 +262,18 @@ booleano flagCongelarTudo = False;
 // JUMP+ M(999, 0:19)
 booleano dependenciaJump = False;
 
-
 booleano dependenciaStorInstrucao = False;
-int pcAlterado = 0;
+Lado dependenciaStor = Esquerdo;
+
+void printStatusPipeline()
+{
+    printf("\n-- Ciclo --\n");
+    printf("\nResultado busca: ");
+    printBits(resultadoBusca);
+    printf("\nResultado decodificacao: Opcode: %d  Endereco: %d", opcodeDecodificado, enderecoDecodificado);
+    printf("\nResultado busca operandos: Operacao a ser executada: %d   dadoParaExecucao:  %d", operacaoASerExecutada, dadoParaExecucao);
+    printf("\nResultado execucao: Instrucao: %d   resultado: %d   resultado_auxiliar: %d", instrucao, resultado, resultado_auxiliar);
+}
 
 /*
     TODO: Simular outros registradores também
@@ -283,8 +293,10 @@ void pipelineBusca()
 
     if (dependenciaStorInstrucao == True)
     {
-        if (bancoRegistradores.PC == pcAlterado)
+        if (bancoRegistradores.PC == pcAlterado && ladoInstrucao == dependenciaStor)
         {
+            printStatusPipeline();
+            resultadoBusca = 0;
             return;
         }
     }
@@ -319,6 +331,8 @@ void pipelineBusca()
         flagEstagioCongelado[4] = True;
         flagCongelarTudo = False;
     }
+
+    printStatusPipeline();
 }
 
 void pipelineDecodificacao()
@@ -327,8 +341,6 @@ void pipelineDecodificacao()
     {
         return;
     }
-
-    printf("\nEntrou na decodificacao");
 
     uint64_t opcode;
     uint64_t endereco;
@@ -346,12 +358,13 @@ void pipelineDecodificacao()
         
         if (ladoInstrucao == Esquerdo)
         {
-            pcAlterado = bancoRegistradores.PC - 1;
-        }    
-        else 
-        {
-            pcAlterado = bancoRegistradores.PC;
+            dependenciaStor = Direito;
         }
+        else
+        {
+            dependenciaStor = Esquerdo;
+        }
+        pcAlterado = (int) enderecoDecodificado;
     }
 }
 
@@ -581,12 +594,7 @@ void pipelineExecucao()
         barramento.endereco = dadoParaExecucao;
         executarBarramento();
 
-        printf("\n\nSTOR ESQ\nDado lido da memória: ");
-        printBits(barramento.saida);
-
         resultado = (barramento.saida & 0b1111111100000000000011111111111111111111);
-        printf("\nResultado: ");
-        printBits(resultado);
         resultado_auxiliar = dadoParaExecucao;
         // barramento.operacao = escrever;
         // barramento.endereco = dadoParaExecucao;
@@ -598,12 +606,7 @@ void pipelineExecucao()
         barramento.endereco = dadoParaExecucao;
         executarBarramento();
 
-        printf("\n\nSTOR ESQ\nDado lido da memoria: ");
-        printBits(barramento.saida);
-
         resultado = (barramento.saida & 0b1111111111111111111111111111000000000000);
-        printf("\nResultado: ");
-        printBits(resultado);
         resultado_auxiliar = dadoParaExecucao;
         // barramento.operacao = escrever;
         // barramento.endereco = dadoParaExecucao;
@@ -618,8 +621,6 @@ void pipelineExecucao()
     default:
         break;
     }
-
-    printf("\nTERMINOU EXECUCAO");
 
     // Casos com IF tem que ficar fora do switch
     if ((operacaoASerExecutada == JUMPMais_DIR && (int64_t) bancoRegistradores.AC >= 0))  // || operacaoASerExecutada == JUMP_DIR)
@@ -772,7 +773,6 @@ void simulacao()
         pipelineBuscaOperandos();
         pipelineDecodificacao();
         pipelineBusca();
-
         // printf("\nAC: %d  MQ: %d", bancoRegistradores.AC, bancoRegistradores.MQ);
     }
 }
@@ -848,6 +848,8 @@ int main (int argc, char *argv[])
     barramento.entrada = 0;
     barramento.endereco = 0;
     barramento.saida = 0;
+
+    pcAlterado = 0;
     
     carregarMemoria(arquivoEntrada, &memoria, &ciclosPorInstrucao);
     char *novo_nome = cria_nome_saida(argv[2]);
