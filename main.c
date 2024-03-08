@@ -497,10 +497,18 @@ void pipelineExecucao()
         instrucao = NENHUMA;
         break;
     case RSH:
-        resultado = bancoRegistradores.AC / 2;
+        unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
+        unidadeLogicaAritmetica.operacao = shiftParaDireita;
+        executarUla();
+        resultado = unidadeLogicaAritmetica.saida;
+        // resultado = bancoRegistradores.AC / 2;
         break;
     case LSH:
-        resultado = bancoRegistradores.AC * 2;
+        unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
+        unidadeLogicaAritmetica.operacao = shiftParaEsquerda;
+        executarUla();
+        resultado = unidadeLogicaAritmetica.saida;
+        // resultado = bancoRegistradores.AC * 2;
         break;
     case DIV_MX:
         resultado = bancoRegistradores.AC % dadoParaExecucao;
@@ -626,7 +634,7 @@ void pipelineEscritaResultados()
         case STOR_MX:
             barramento.endereco = resultado;
             barramento.operacao = escrever;
-            barramento.entrada = bancoRegistradores.AC;
+            barramento.entrada = inverteDado(bancoRegistradores.AC);
             executarBarramento();
             break;    
         case STOR_MX_DIR:

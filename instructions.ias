@@ -20,13 +20,10 @@ storm:17
 */
 100
 0
-6
+2
 -2
 LOAD M(2)
-ADD M(3)
-ADD M(3)
-JUMP+ M(7,20:39)
+SUB M(2)
+SUB M(2)
 STOR M(1)
-LOAD M(2)
-STOR M(3)
 EXIT

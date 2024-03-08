@@ -327,6 +327,27 @@ int64_t converteDado(uint64_t entrada)
     return magnitude;
 }
 
+uint64_t inverteDado(int64_t entrada)
+{
+    /*
+        Inverte um dado para ser armazenado na memória no formato sinal magnitude
+        Entrada:
+            int64_t entrada: O valor que se quer converter
+        Retorna o valor convertido para sinal magnitude
+    */
+
+    if (entrada >= 0)
+    {
+        return entrada;
+    }
+
+    entrada *= -1;
+
+    entrada = entrada | 549755813888;
+
+    return entrada;
+}
+
 booleano stringEhNumericaOuNula(char* str)
 {
     
@@ -616,7 +637,7 @@ void dumpDaMemoria(uint8_t *memoria, char nome_arq_saida[])
     FILE *saida;
     FILE *saidaBinaria;
 
-    uint64_t palavra;
+    int64_t palavra;
     int64_t dado;
 
     saida = fopen(nome_arq_saida, "w");
@@ -624,7 +645,7 @@ void dumpDaMemoria(uint8_t *memoria, char nome_arq_saida[])
 
     for (int i = 0; i < TAMANHO_MEMORIA; i++)
     {
-        palavra = buscaNaMemoria(memoria, i);
+        palavra = converteDado(buscaNaMemoria(memoria, i));
         fprintf(saida, "%"PRId64"\n", palavra);
         /*
         if (i <= 499)
