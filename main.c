@@ -377,6 +377,12 @@ void pipelineBuscaOperandos()
         case JUMPMais_ESQ:
             dadoParaExecucao = enderecoDecodificado;
             break;
+        case DIV_MX:
+            barramento.endereco = enderecoDecodificado;
+            barramento.operacao = ler;
+            executarBarramento();
+            dadoParaExecucao = converteDado(barramento.saida);    
+            break;
         default:
             barramento.endereco = enderecoDecodificado;
             barramento.operacao = ler;
@@ -513,6 +519,8 @@ void pipelineExecucao()
     case DIV_MX:
         resultado = bancoRegistradores.AC % dadoParaExecucao;
         resultado_auxiliar = bancoRegistradores.AC / dadoParaExecucao;
+        bancoRegistradores.AC = resultado;
+        bancoRegistradores.MQ = resultado_auxiliar;
         break;
     case MUL_MX:
         resultado = (dadoParaExecucao * bancoRegistradores.MQ) >> 39;
@@ -774,7 +782,7 @@ int main (int argc, char *argv[])
     bancoRegistradores.AC = 0;
     bancoRegistradores.MQ = 0;
     bancoRegistradores.MBR = 0;
-    bancoRegistradores.PC = 3;
+    bancoRegistradores.PC = 2;
     bancoRegistradores.MAR = 0;
     bancoRegistradores.IBR = 0;
     bancoRegistradores.IR = 0;

@@ -1,0 +1,28 @@
+/*
+loadm:11
+loadmm:1
+stor:2
+load:3
+load-m:4
+load|m:5
+load-|m:6 
+jump:7
+jump+:8
+add:9
+add|:10
+sub:11
+sub|:12
+mul:13
+div:14
+lsh:15
+rsh:16
+storm:17
+*/
+7
+2
+LOAD M(0)
+DIV M(1)
+STOR M(1)
+LOAD MQ
+STOR M(0)
+EXIT
