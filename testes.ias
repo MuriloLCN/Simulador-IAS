@@ -19,14 +19,20 @@ rsh:16
 storm:17
 */
 1
-5
+7
 1
 LOAD M(1)
 STOR M(2)
 LOAD M(1)
 SUB M(0)
 STOR M(1)
-LOAD MQ, M(1)
+LOAD M(0)
+SUB M(1)
+JUMP+ M(10, 0:19)
+LOAD MQ, M(2)
+MUL M(1)
 LOAD MQ
 STOR M(2)
+JUMP M(4, 0:19)
+RSH
 EXIT

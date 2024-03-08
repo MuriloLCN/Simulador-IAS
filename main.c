@@ -827,15 +827,15 @@ ADD |MX|
 SUB |MX|
 
 Instruções parcialmente OK (faltam mais testes mas não apresentaram problemas):
-MUL MX
+MUL MX -- Leandro: fiz mais alguns testes e parece estar certo mesmo
+JUMP_ESQ
+JUMPMais_ESQ,
 
 Instruções não OK:
 DIV_MX
 
 Instruções não testadas ainda:
-JUMP_ESQ,
 JUMP_DIR,
-JUMPMais_ESQ,
 JUMPMais_DIR
 STOR_MX_ESQ,
 STOR_MX_DIR, 
