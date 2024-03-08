@@ -261,6 +261,10 @@ booleano flagCongelarTudo = False;
 // JUMP+ M(999, 0:19)
 booleano dependenciaJump = False;
 
+
+booleano dependenciaStorInstrucao = False;
+int pcAlterado = 0;
+
 /*
     TODO: Simular outros registradores também
 */
@@ -276,6 +280,14 @@ void pipelineBusca()
     }
 
     //printf("\nBuscando dado do PC = %d", bancoRegistradores.PC);
+
+    if (dependenciaStorInstrucao == True)
+    {
+        if (bancoRegistradores.PC == pcAlterado)
+        {
+            return;
+        }
+    }
 
     barramento.endereco = bancoRegistradores.PC;
     barramento.operacao = ler;
@@ -299,10 +311,6 @@ void pipelineBusca()
         bancoRegistradores.PC =  bancoRegistradores.PC + 1;
     }
 
-    //printf("\nResultado busca: ");
-    //printBits(resultadoBusca);
-
-
     if (flagCongelarTudo == True)
     {
         flagEstagioCongelado[0] = True;
@@ -319,6 +327,9 @@ void pipelineDecodificacao()
     {
         return;
     }
+
+    printf("\nEntrou na decodificacao");
+
     uint64_t opcode;
     uint64_t endereco;
 
@@ -326,10 +337,22 @@ void pipelineDecodificacao()
 
     endereco = resultadoBusca & 0b111111111111;
 
-    
-
     opcodeDecodificado = opCodeParaInstrucao(opcode);
     enderecoDecodificado = endereco;
+
+    if (opcodeDecodificado == STOR_MX_DIR || opcodeDecodificado == STOR_MX_ESQ)
+    {
+        dependenciaStorInstrucao = True;
+        
+        if (ladoInstrucao == Esquerdo)
+        {
+            pcAlterado = bancoRegistradores.PC - 1;
+        }    
+        else 
+        {
+            pcAlterado = bancoRegistradores.PC;
+        }
+    }
 }
 
 void pipelineBuscaOperandos()
@@ -503,14 +526,14 @@ void pipelineExecucao()
         limparPipeline();
         ladoInstrucao = Direito;
         instrucao = NENHUMA;
-        break;;
+        break;
     case JUMP_ESQ:
         bancoRegistradores.PC = (int) dadoParaExecucao;
         printf("\nPulando para o endereco esquerdo de %d", bancoRegistradores.PC);
         limparPipeline();
         ladoInstrucao = Esquerdo;
         instrucao = NENHUMA;
-        break;;
+        break;
     case RSH:
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
         unidadeLogicaAritmetica.operacao = shiftParaDireita;
@@ -558,7 +581,12 @@ void pipelineExecucao()
         barramento.endereco = dadoParaExecucao;
         executarBarramento();
 
+        printf("\n\nSTOR ESQ\nDado lido da memória: ");
+        printBits(barramento.saida);
+
         resultado = (barramento.saida & 0b1111111100000000000011111111111111111111);
+        printf("\nResultado: ");
+        printBits(resultado);
         resultado_auxiliar = dadoParaExecucao;
         // barramento.operacao = escrever;
         // barramento.endereco = dadoParaExecucao;
@@ -570,12 +598,18 @@ void pipelineExecucao()
         barramento.endereco = dadoParaExecucao;
         executarBarramento();
 
+        printf("\n\nSTOR ESQ\nDado lido da memoria: ");
+        printBits(barramento.saida);
+
         resultado = (barramento.saida & 0b1111111111111111111111111111000000000000);
+        printf("\nResultado: ");
+        printBits(resultado);
         resultado_auxiliar = dadoParaExecucao;
         // barramento.operacao = escrever;
         // barramento.endereco = dadoParaExecucao;
         // barramento.entrada = (barramento.saida & 0b1111111111111111111111111111000000000000) | bancoRegistradores.AC;
         // executarBarramento();
+        break;
     case EXIT:
         flagTerminou = True;
         break;
@@ -584,6 +618,8 @@ void pipelineExecucao()
     default:
         break;
     }
+
+    printf("\nTERMINOU EXECUCAO");
 
     // Casos com IF tem que ficar fora do switch
     if ((operacaoASerExecutada == JUMPMais_DIR && (int64_t) bancoRegistradores.AC >= 0))  // || operacaoASerExecutada == JUMP_DIR)
@@ -657,16 +693,20 @@ void pipelineEscritaResultados()
             executarBarramento();
             break;    
         case STOR_MX_DIR:
+            printf("\nESCRITA DE RESULTADOS MXDIR");
             barramento.operacao = escrever;
             barramento.endereco = resultado_auxiliar;
             barramento.entrada = resultado | bancoRegistradores.AC;
             executarBarramento();
+            dependenciaStorInstrucao = False;
             break;
         case STOR_MX_ESQ:
+            printf("\nESCRITA DE RESULTADOS MXESQ");
             barramento.operacao = escrever;
             barramento.endereco = resultado_auxiliar;
             barramento.entrada = resultado | (bancoRegistradores.AC << 20);
             executarBarramento();
+            dependenciaStorInstrucao = False;
             break;
         case JUMP_DIR:
         case JUMP_ESQ:

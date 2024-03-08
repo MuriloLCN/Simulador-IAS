@@ -23,8 +23,7 @@ storm:17
 2
 3
 LOAD M(0)
-STOR M(5, 28:39)
-LOAD M(0)
+STOR M(5, 8:19)
 LOAD M(2)
 STOR M(3)
 EXIT
