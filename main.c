@@ -275,7 +275,7 @@ void pipelineBusca()
         return;
     }
 
-    printf("\nBuscando dado do PC = %d", bancoRegistradores.PC);
+    //printf("\nBuscando dado do PC = %d", bancoRegistradores.PC);
 
     barramento.endereco = bancoRegistradores.PC;
     barramento.operacao = ler;
@@ -833,8 +833,8 @@ LOAD MQ, MX
 STOR MX
 LOAD MX
 LOAD MQ, 
-LSH, <-- testar com negativos
-RSH, <-- testar com negativos
+LSH,
+RSH,
 ADD MX
 EXIT
 NENHUMA
@@ -843,18 +843,18 @@ LOAD- MX
 LOAD- |MX|
 ADD |MX|
 SUB |MX|
-
-Instruções parcialmente OK (faltam mais testes mas não apresentaram problemas):
-MUL MX -- Leandro: fiz mais alguns testes e parece estar certo mesmo
+MUL MX
 JUMP_ESQ
 JUMPMais_ESQ,
-
-Instruções não OK:
-DIV_MX
-
-Instruções não testadas ainda:
 JUMP_DIR,
 JUMPMais_DIR
+
+Instruções parcialmente OK (faltam mais testes mas não apresentaram problemas):
+DIV_MX
+
+Instruções não OK:
+
+Instruções não testadas ainda:
 STOR_MX_ESQ,
 STOR_MX_DIR, 
 

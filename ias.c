@@ -948,6 +948,7 @@ void converteInstrucao(char* instrucao, char* opcode, int* endereco)
     }
     else
     {
+        printf("\nInstrucao nao reconhecida: %s", instrucao);
         strcpy(opcode, "00000000");
         *endereco = -1;
     }
