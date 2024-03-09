@@ -265,24 +265,31 @@ booleano dependenciaJump = False;
 booleano dependenciaStorInstrucao = False;
 Lado dependenciaStorLado = Esquerdo;
 
-// void printStatusPipeline()
-// {
-//     printf("\n-- Ciclo --\n");
-//     printf("\nResultado busca: ");
-//     printBits(resultadoBusca);
-//     printf("\nResultado decodificacao: Opcode: %d  Endereco: %d", opcodeDecodificado, enderecoDecodificado);
-//     printf("\nResultado busca operandos: Operacao a ser executada: %d   dadoParaExecucao:  %d", operacaoASerExecutada, dadoParaExecucao);
-//     printf("\nResultado execucao: Instrucao: %d   resultado: %d   resultado_auxiliar: %d", instrucao, resultado, resultado_auxiliar);
-// }
+void printStatusPipeline()
+{
+    printf("\n-- Ciclo --\n");
+    printf("\nResultado busca: ");
+    printBits(resultadoBusca);
+    printf("\nResultado decodificacao: Opcode: %d  Endereco: %d", opcodeDecodificado, enderecoDecodificado);
+    printf("\nResultado busca operandos: Operacao a ser executada: %d   dadoParaExecucao:  %d", operacaoASerExecutada, dadoParaExecucao);
+    printf("\nResultado execucao: Instrucao: %d   resultado: %d   resultado_auxiliar: %d", instrucao, resultado, resultado_auxiliar);
+}
 
 /*
     TODO: Simular outros registradores também
 */
 
+booleano flagAnularBusca = False;
+
 void pipelineBusca()
 {
     // Lê o lugar de memória dito por PC (lembrando que pode ser esquerdo ou direito tbm)
     // e guarda o OpCode + dado em um lugar [A]
+    if (flagAnularBusca == True)
+    {
+        resultadoBusca = 0;
+        return;
+    }
 
     if (flagEstagioCongelado[0] == True)
     {
@@ -296,8 +303,10 @@ void pipelineBusca()
         if (bancoRegistradores.PC == pcAlterado && ladoInstrucao == dependenciaStorLado)
         {
             printf("\nDependencia stor");
-            flagEstagioCongelado[0] = True;
-            // return;
+            //flagEstagioCongelado[0] = True;
+            flagAnularBusca = True;
+            //resultadoBusca = 0;
+            return;
         }
     }
 
@@ -446,12 +455,11 @@ void pipelineExecucao()
 {
     if (flagPegarNovoContador == True)
     {
+        //printStatusPipeline();
         contadorClockExecucao = ciclosPorInstrucao[operacaoASerExecutada];
         switch (operacaoASerExecutada)
         {
             case STOR_MX:
-            case STOR_MX_DIR:
-            case STOR_MX_ESQ:
                 dependenciaRAW = True;
                 enderecoRAW = dadoParaExecucao;
                 break;
@@ -659,7 +667,8 @@ void pipelineEscritaResultados()
     flagEstagioCongelado[1] = False;
     flagEstagioCongelado[2] = False;
     flagEstagioCongelado[3] = False;
-
+    
+    
     switch (instrucao)
     {
         // Essa instrução faz AC <- MQ
@@ -702,6 +711,7 @@ void pipelineEscritaResultados()
             barramento.entrada = resultado | bancoRegistradores.AC;
             executarBarramento();
             dependenciaStorInstrucao = False;
+            flagAnularBusca = False;
             break;
         case STOR_MX_ESQ:
             printf("\nESCRITA DE RESULTADOS MXESQ");
@@ -710,6 +720,7 @@ void pipelineEscritaResultados()
             barramento.entrada = resultado | (bancoRegistradores.AC << 20);
             executarBarramento();
             dependenciaStorInstrucao = False;
+            flagAnularBusca = False;
             break;
         case JUMP_DIR:
         case JUMP_ESQ:
@@ -775,6 +786,7 @@ void simulacao()
         pipelineBuscaOperandos();
         pipelineDecodificacao();
         pipelineBusca();
+        //printStatusPipeline();
         // printf("\nAC: %d  MQ: %d", bancoRegistradores.AC, bancoRegistradores.MQ);
     }
 }
