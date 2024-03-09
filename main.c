@@ -263,17 +263,17 @@ booleano flagCongelarTudo = False;
 booleano dependenciaJump = False;
 
 booleano dependenciaStorInstrucao = False;
-Lado dependenciaStor = Esquerdo;
+Lado dependenciaStorLado = Esquerdo;
 
-void printStatusPipeline()
-{
-    printf("\n-- Ciclo --\n");
-    printf("\nResultado busca: ");
-    printBits(resultadoBusca);
-    printf("\nResultado decodificacao: Opcode: %d  Endereco: %d", opcodeDecodificado, enderecoDecodificado);
-    printf("\nResultado busca operandos: Operacao a ser executada: %d   dadoParaExecucao:  %d", operacaoASerExecutada, dadoParaExecucao);
-    printf("\nResultado execucao: Instrucao: %d   resultado: %d   resultado_auxiliar: %d", instrucao, resultado, resultado_auxiliar);
-}
+// void printStatusPipeline()
+// {
+//     printf("\n-- Ciclo --\n");
+//     printf("\nResultado busca: ");
+//     printBits(resultadoBusca);
+//     printf("\nResultado decodificacao: Opcode: %d  Endereco: %d", opcodeDecodificado, enderecoDecodificado);
+//     printf("\nResultado busca operandos: Operacao a ser executada: %d   dadoParaExecucao:  %d", operacaoASerExecutada, dadoParaExecucao);
+//     printf("\nResultado execucao: Instrucao: %d   resultado: %d   resultado_auxiliar: %d", instrucao, resultado, resultado_auxiliar);
+// }
 
 /*
     TODO: Simular outros registradores também
@@ -293,11 +293,11 @@ void pipelineBusca()
 
     if (dependenciaStorInstrucao == True)
     {
-        if (bancoRegistradores.PC == pcAlterado && ladoInstrucao == dependenciaStor)
+        if (bancoRegistradores.PC == pcAlterado && ladoInstrucao == dependenciaStorLado)
         {
-            printStatusPipeline();
-            resultadoBusca = 0;
-            return;
+            printf("\nDependencia stor");
+            flagEstagioCongelado[0] = True;
+            // return;
         }
     }
 
@@ -332,7 +332,7 @@ void pipelineBusca()
         flagCongelarTudo = False;
     }
 
-    printStatusPipeline();
+    //printStatusPipeline();
 }
 
 void pipelineDecodificacao()
@@ -352,18 +352,20 @@ void pipelineDecodificacao()
     opcodeDecodificado = opCodeParaInstrucao(opcode);
     enderecoDecodificado = endereco;
 
-    if (opcodeDecodificado == STOR_MX_DIR || opcodeDecodificado == STOR_MX_ESQ)
+    if (opcodeDecodificado == STOR_MX_DIR)
     {
         dependenciaStorInstrucao = True;
-        
-        if (ladoInstrucao == Esquerdo)
-        {
-            dependenciaStor = Direito;
-        }
-        else
-        {
-            dependenciaStor = Esquerdo;
-        }
+
+        dependenciaStorLado = Direito;
+
+        pcAlterado = (int) enderecoDecodificado;
+    }
+    if (opcodeDecodificado == STOR_MX_ESQ)
+    {
+        dependenciaStorInstrucao = True;
+
+        dependenciaStorLado = Esquerdo;
+
         pcAlterado = (int) enderecoDecodificado;
     }
 }
