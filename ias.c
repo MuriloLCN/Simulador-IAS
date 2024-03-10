@@ -808,7 +808,7 @@ void converteInstrucao(char* instrucao, char* opcode, int* endereco)
         strcpy(opcode, "00000001");
         *endereco = pegaParametroInstrucao(instrucao, 7);
     }
-    else if (comecaCom(instrucao,"LOAD- M("))
+    else if (comecaCom(instrucao,"LOAD- M(") || comecaCom(instrucao,"LOAD -M("))
     {
         // Opcode 00000010 (2)
         // Início endereço: 8
@@ -822,7 +822,7 @@ void converteInstrucao(char* instrucao, char* opcode, int* endereco)
         strcpy(opcode, "00000011");
         *endereco = pegaParametroInstrucao(instrucao, 8);
     }
-    else if (comecaCom(instrucao,"LOAD- |M("))
+    else if (comecaCom(instrucao,"LOAD- |M(") || comecaCom(instrucao,"LOAD -|M("))
     {
         // Opcode 00000100 (4)
         // Início endereço: 9
