@@ -265,51 +265,66 @@ booleano dependenciaJump = False;
 booleano dependenciaStorInstrucao = False;
 Lado dependenciaStorLado = Esquerdo;
 
-void printStatusPipeline()
-{
-    printf("\n-- Ciclo --\n");
-    printf("\nResultado busca: ");
-    printBits(resultadoBusca);
-    printf("\nResultado decodificacao: Opcode: %d  Endereco: %d", opcodeDecodificado, enderecoDecodificado);
-    printf("\nResultado busca operandos: Operacao a ser executada: %d   dadoParaExecucao:  %d", operacaoASerExecutada, dadoParaExecucao);
-    printf("\nResultado execucao: Instrucao: %d   resultado: %d   resultado_auxiliar: %d", instrucao, resultado, resultado_auxiliar);
-}
+// void printStatusPipeline()
+// {
+//     printf("\n-- Ciclo --\n");
+//     printf("\nResultado busca: ");
+//     printBits(resultadoBusca);
+//     printf("\nResultado decodificacao: Opcode: %d  Endereco: %d", opcodeDecodificado, enderecoDecodificado);
+//     printf("\nResultado busca operandos: Operacao a ser executada: %d   dadoParaExecucao:  %d", operacaoASerExecutada, dadoParaExecucao);
+//     printf("\nResultado execucao: Instrucao: %d   resultado: %d   resultado_auxiliar: %d", instrucao, resultado, resultado_auxiliar);
+// }
 
 /*
     TODO: Simular outros registradores também
 */
 
 booleano flagAnularBusca = False;
+booleano flagEvitarSobreescrita = False;
+// booleano flagDependenciaBO = False;
 
 void pipelineBusca()
 {
     // Lê o lugar de memória dito por PC (lembrando que pode ser esquerdo ou direito tbm)
     // e guarda o OpCode + dado em um lugar [A]
-    if (flagAnularBusca == True)
-    {
-        resultadoBusca = 0;
-        return;
-    }
-
+    
     if (flagEstagioCongelado[0] == True)
     {
         return;
     }
+    
+    if (flagCongelarTudo == True)
+    {
+        flagEstagioCongelado[0] = True;
+        flagEstagioCongelado[1] = True;
+        flagEstagioCongelado[2] = True;
+        flagEstagioCongelado[4] = True;
+        flagCongelarTudo = False;
+    }
 
-    //printf("\nBuscando dado do PC = %d", bancoRegistradores.PC);
+    if (flagAnularBusca == True)
+    {
+        resultadoBusca = 0;    
+        return;
+    }
+
 
     if (dependenciaStorInstrucao == True)
     {
         if (bancoRegistradores.PC == pcAlterado && ladoInstrucao == dependenciaStorLado)
         {
             printf("\nDependencia stor");
+            // flagDependenciaBO = True;
             //flagEstagioCongelado[0] = True;
+            //flagEstagioCongelado[1] = True;
+            //flagEstagioCongelado[2] = True;
             flagAnularBusca = True;
-            //resultadoBusca = 0;
+            flagEvitarSobreescrita = True;
+            resultadoBusca = 0;
             return;
         }
     }
-
+    
     barramento.endereco = bancoRegistradores.PC;
     barramento.operacao = ler;
     executarBarramento();
@@ -332,21 +347,21 @@ void pipelineBusca()
         bancoRegistradores.PC =  bancoRegistradores.PC + 1;
     }
 
-    if (flagCongelarTudo == True)
-    {
-        flagEstagioCongelado[0] = True;
-        flagEstagioCongelado[1] = True;
-        flagEstagioCongelado[2] = True;
-        flagEstagioCongelado[4] = True;
-        flagCongelarTudo = False;
-    }
+    // if (flagCongelarTudo == True)
+    // {
+    //     flagEstagioCongelado[0] = True;
+    //     flagEstagioCongelado[1] = True;
+    //     flagEstagioCongelado[2] = True;
+    //     flagEstagioCongelado[4] = True;
+    //     flagCongelarTudo = False;
+    // }
 
-    //printStatusPipeline();
+    // printStatusPipeline();
 }
 
 void pipelineDecodificacao()
 {
-    if (flagEstagioCongelado[1] == True)
+    if (flagEstagioCongelado[1] == True || flagEvitarSobreescrita == True)
     {
         return;
     }
@@ -381,7 +396,7 @@ void pipelineDecodificacao()
 
 void pipelineBuscaOperandos()
 {
-    if (flagEstagioCongelado[2] == True)
+    if (flagEstagioCongelado[2] == True || flagEvitarSobreescrita == True)
     {
         return;
     }
@@ -390,7 +405,6 @@ void pipelineBuscaOperandos()
     {
         if (enderecoDecodificado == enderecoRAW)
         {
-            printf("\nDEPENDENCIA RAW!!! INSERINDO BOLHA");
             // Inserindo bolha
             operacaoASerExecutada = NENHUMA;
             flagEstagioCongelado[0] = True;
@@ -406,7 +420,6 @@ void pipelineBuscaOperandos()
         {
         case JUMPMais_DIR:
         case JUMPMais_ESQ:
-            printf("\nDependencia jump!! Inserindo bolha");
             operacaoASerExecutada = NENHUMA;
             flagEstagioCongelado[0] = True;
             flagEstagioCongelado[1] = True;
@@ -455,7 +468,6 @@ void pipelineExecucao()
 {
     if (flagPegarNovoContador == True)
     {
-        //printStatusPipeline();
         contadorClockExecucao = ciclosPorInstrucao[operacaoASerExecutada];
         switch (operacaoASerExecutada)
         {
@@ -489,6 +501,7 @@ void pipelineExecucao()
             default:
                 dependenciaJump = False;
         }
+
         flagPegarNovoContador = False;
         flagCongelarTudo = True;
     }
@@ -545,14 +558,12 @@ void pipelineExecucao()
         break;
     case JUMP_DIR:
         bancoRegistradores.PC = (int) dadoParaExecucao;
-        printf("\nPulando para o endereco direito de %d", bancoRegistradores.PC);
         limparPipeline();
         ladoInstrucao = Direito;
         instrucao = NENHUMA;
         break;
     case JUMP_ESQ:
         bancoRegistradores.PC = (int) dadoParaExecucao;
-        printf("\nPulando para o endereco esquerdo de %d", bancoRegistradores.PC);
         limparPipeline();
         ladoInstrucao = Esquerdo;
         instrucao = NENHUMA;
@@ -635,17 +646,14 @@ void pipelineExecucao()
     // Casos com IF tem que ficar fora do switch
     if ((operacaoASerExecutada == JUMPMais_DIR && (int64_t) bancoRegistradores.AC >= 0))  // || operacaoASerExecutada == JUMP_DIR)
     {
-        printf("\nOperacao era um jump dir e o AC era maior que zero: %d", bancoRegistradores.AC);
         bancoRegistradores.PC = (int) dadoParaExecucao;
         limparPipeline();
         ladoInstrucao = Direito;
         instrucao = NENHUMA;
-        printf("\n\nJUMP FEITO\n\n");
     }
 
     if ((operacaoASerExecutada == JUMPMais_ESQ && (int64_t) bancoRegistradores.AC >= 0))  // || operacaoASerExecutada == JUMP_ESQ)
     {
-        printf("\nOperacao era um jump esq e o AC era maior que zero: %d", bancoRegistradores.AC);
         bancoRegistradores.PC = (int) dadoParaExecucao;
         limparPipeline();
         ladoInstrucao = Esquerdo;
@@ -668,6 +676,7 @@ void pipelineEscritaResultados()
     flagEstagioCongelado[2] = False;
     flagEstagioCongelado[3] = False;
     
+    flagEvitarSobreescrita = False;
     
     switch (instrucao)
     {
@@ -705,22 +714,24 @@ void pipelineEscritaResultados()
             executarBarramento();
             break;    
         case STOR_MX_DIR:
-            printf("\nESCRITA DE RESULTADOS MXDIR");
             barramento.operacao = escrever;
             barramento.endereco = resultado_auxiliar;
             barramento.entrada = resultado | bancoRegistradores.AC;
             executarBarramento();
             dependenciaStorInstrucao = False;
             flagAnularBusca = False;
+            //flagEvitarSobreescrita = True;
+            // flagDependenciaBO = False;
             break;
         case STOR_MX_ESQ:
-            printf("\nESCRITA DE RESULTADOS MXESQ");
             barramento.operacao = escrever;
             barramento.endereco = resultado_auxiliar;
             barramento.entrada = resultado | (bancoRegistradores.AC << 20);
             executarBarramento();
             dependenciaStorInstrucao = False;
             flagAnularBusca = False;
+            //flagEvitarSobreescrita = True;
+            // flagDependenciaBO = False;
             break;
         case JUMP_DIR:
         case JUMP_ESQ:
@@ -786,14 +797,11 @@ void simulacao()
         pipelineBuscaOperandos();
         pipelineDecodificacao();
         pipelineBusca();
-        //printStatusPipeline();
-        // printf("\nAC: %d  MQ: %d", bancoRegistradores.AC, bancoRegistradores.MQ);
     }
 }
 
 void limparPipeline()
 {
-    //printf("\nPIPELINE LIMPO");
     resultado = 0;
     resultado_auxiliar = 0;
     instrucao = NENHUMA;
