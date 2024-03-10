@@ -18,7 +18,9 @@ typedef enum {False, True} booleano;
 
 typedef enum {
     soma,
+    somam, // soma módulo: C = A + |B|
     subtracao,
+    subtracaom, // subtração módulo C = A - |B|
     multiplicacao,
     divisao,
     shiftParaEsquerda,
@@ -537,22 +539,24 @@ void pipelineExecucao()
         break;
     case ADD_ABSMX:
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
-        unidadeLogicaAritmetica.entrada2 = abs(dadoParaExecucao);
-        unidadeLogicaAritmetica.operacao = soma;
+        //unidadeLogicaAritmetica.entrada2 = abs(dadoParaExecucao);
+        unidadeLogicaAritmetica.entrada2 = dadoParaExecucao;
+        unidadeLogicaAritmetica.operacao = somam;
         executarUla();
         resultado = unidadeLogicaAritmetica.saida;
         break;
     case SUB_MX:
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
-        unidadeLogicaAritmetica.entrada2 = dadoParaExecucao;
+        //unidadeLogicaAritmetica.entrada2 = dadoParaExecucao;
         unidadeLogicaAritmetica.operacao = subtracao;
         executarUla();
         resultado = unidadeLogicaAritmetica.saida;
         break;
     case SUB_ABSMX:
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
-        unidadeLogicaAritmetica.entrada2 = abs(dadoParaExecucao);
-        unidadeLogicaAritmetica.operacao = soma;
+        //unidadeLogicaAritmetica.entrada2 = abs(dadoParaExecucao);
+        unidadeLogicaAritmetica.entrada2 = dadoParaExecucao;
+        unidadeLogicaAritmetica.operacao = subtracaom;
         executarUla();
         resultado = unidadeLogicaAritmetica.saida;
         break;
@@ -766,8 +770,14 @@ void executarUla()
     case soma:
         unidadeLogicaAritmetica.saida = unidadeLogicaAritmetica.entrada1 + unidadeLogicaAritmetica.entrada2;
         break;
+    case somam:
+        unidadeLogicaAritmetica.saida = unidadeLogicaAritmetica.entrada1 + abs(unidadeLogicaAritmetica.entrada2);
+        break;
     case subtracao:
         unidadeLogicaAritmetica.saida = unidadeLogicaAritmetica.entrada1 - unidadeLogicaAritmetica.entrada2;
+        break;
+    case subtracaom:
+        unidadeLogicaAritmetica.saida = unidadeLogicaAritmetica.entrada1 - abs(unidadeLogicaAritmetica.entrada2);
         break;
     case multiplicacao:
         unidadeLogicaAritmetica.saida = unidadeLogicaAritmetica.entrada1 * unidadeLogicaAritmetica.entrada2;
