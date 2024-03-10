@@ -331,13 +331,12 @@ void pipelineBusca()
     barramento.operacao = ler;
     executarBarramento();
 
-    //uint64_t enderecoBuscado = barramento.saida;
-    bancoRegistradores.MBR = barramento.saida;
+    uint64_t enderecoBuscado = barramento.saida;
 
-    //uint64_t ladoEsquerdo = (enderecoBuscado & 0b1111111111111111111100000000000000000000) >> 20;
-    bancoRegistradores.IBR = (bancoRegistradores.MBR & 0b1111111111111111111100000000000000000000) >> 20;
-    //uint64_t ladoDireito = enderecoBuscado & 0b11111111111111111111;
-    
+
+    uint64_t ladoEsquerdo = (enderecoBuscado & 0b1111111111111111111100000000000000000000) >> 20;
+    uint64_t ladoDireito = enderecoBuscado & 0b11111111111111111111;
+
     if (ladoInstrucao == Esquerdo)
     {
         resultadoBusca = ladoEsquerdo;
