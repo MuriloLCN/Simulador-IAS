@@ -1,0 +1,12 @@
+Ordenação por bolha
+Ordem da memória
+Endereço | Variável | Valor que deve estar no começo
+00       | temp     | qualquer valor
+01       | step     | qualquer valor
+02       | i        | qualquer valor
+03       | init_vet | 6
+04       | um       | 1
+05       | tamanho  | o tamanho do vetor a ser ordenado
+06-55    | vetor A  | os elementos do vetor a ser ordenado, em ordem, com início no endereço 6 (endereços não utilizados devem ser preenchidos com 0)
+55+      | instruções...
+PC inicial = 56

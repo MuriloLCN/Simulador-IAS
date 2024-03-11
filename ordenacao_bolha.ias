@@ -1,0 +1,96 @@
+0
+0
+0
+6
+1
+10
+1
+2
+3
+4
+5
+6
+7
+8
+9
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+1
+LOAD- M(4)
+STOR M(1)
+LOAD M(1)
+ADD M(4)
+STOR M(1)
+LOAD M(1)
+SUB M(5)
+ADD M(4)
+JUMP+ M(75, 20:39)
+LOAD- M(4)
+STOR M(2)
+LOAD M(2)
+ADD M(4)
+STOR M(2)
+LOAD M(2)
+SUB M(5)
+ADD M(1)
+ADD M(4)
+JUMP+ M(75, 0:19)
+LOAD M(3)
+ADD M(2)
+STOR M(70, 28:39)
+STOR M(71, 28:39)
+STOR M(73, 8:19)
+ADD M(4)
+STOR M(74, 8:19)
+STOR M(72, 28:39)
+STOR M(70, 8:19)
+LOAD M(888)
+SUB M(999)
+JUMP+ M(61, 20:39)
+LOAD M(999)
+STOR M(0)
+LOAD M(888)
+STOR M(999)
+LOAD M(0)
+STOR M(888)
+JUMP M(61, 20:39)
+JUMP M(57, 0:19)
+EXIT
