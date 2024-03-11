@@ -104,7 +104,17 @@ typedef struct {
 
 // Banco de registradores intermediários (interfaces de comunicação entre os estágios do pipeline)
 typedef struct {
+    Instrucao opcodeDecodificado;
+    uint64_t enderecoDecodificado;
 
+    uint64_t resultadoBusca;
+
+    uint64_t resultado;
+    uint64_t resultado_auxiliar;
+    Instrucao instrucao;
+
+    Instrucao operacaoASerExecutada;
+    uint64_t dadoParaExecucao;
 } BRIntermediario;
 
 Instrucao opCodeParaInstrucao(uint64_t opCode)
@@ -229,10 +239,11 @@ int* ciclosPorInstrucao;
 BR bancoRegistradores;
 ULA unidadeLogicaAritmetica;
 BarramentoMemoria barramento;
+BRIntermediario bancoIntermediario;
+UC unidadeDeControle;
 
 // Contador de clock (para que seja simulado o pipeline)
 int contadorClockExecucao = 1;
-
 
 booleano flagEstagioCongelado[] = {False, False, False, False, False};
 booleano dependenciaRAW = False;
@@ -242,21 +253,6 @@ int enderecoRAW = 0;
 int pcAlterado = 0;
 
 Lado ladoInstrucao = Esquerdo;
-
-uint64_t resultadoBusca = 0; // Resultado da fase de busca
-
-// Resultados da fase de decodificação
-Instrucao opcodeDecodificado = NENHUMA;
-uint64_t enderecoDecodificado = 0;
-
-// Resultados da fase da busca de operandos
-Instrucao operacaoASerExecutada = NENHUMA;
-uint64_t dadoParaExecucao = 0; // Em operações LOAD e STOR, representa o endereço de memória a ser acessado
-
-// Resultados da fase de execução
-uint64_t resultado = 0;
-uint64_t resultado_auxiliar = 0;
-Instrucao instrucao = NENHUMA;
 
 booleano flagTerminou = False;
 booleano flagCongelarTudo = False;
@@ -327,7 +323,7 @@ void pipelineBusca()
     // Caso deva ser inserida uma bolha na busca [Dependência STOR M(X, [Esq, Dir])]
     if (flagAnularBusca == True)
     {
-        resultadoBusca = 0;    
+        bancoIntermediario.resultadoBusca = 0;    
         return;
     }
 
@@ -339,7 +335,7 @@ void pipelineBusca()
             // Dependência STOR identificada
             flagAnularBusca = True;
             flagEvitarSobreescrita = True;
-            resultadoBusca = 0;
+            bancoIntermediario.resultadoBusca = 0;
             return;
         }
     }
@@ -359,14 +355,14 @@ void pipelineBusca()
     if (ladoInstrucao == Esquerdo)
     {
         // Fazer coisas do lado esquerdo aqui...
-        resultadoBusca = ladoEsquerdo;
+        bancoIntermediario.resultadoBusca = ladoEsquerdo;
         ladoInstrucao = Direito;
     }
     else 
     {
         // Fazer coisas do lado direito aqui...
         ladoInstrucao = Esquerdo;
-        resultadoBusca = ladoDireito;
+        bancoIntermediario.resultadoBusca = ladoDireito;
         bancoRegistradores.PC =  bancoRegistradores.PC + 1;
     }
 }
@@ -389,25 +385,25 @@ void pipelineDecodificacao()
     uint64_t opcode;
     uint64_t endereco;
 
-    opcode = (resultadoBusca & 0b11111111000000000000) >> 12;
+    opcode = (bancoIntermediario.resultadoBusca & 0b11111111000000000000) >> 12;
 
-    endereco = resultadoBusca & 0b111111111111;
+    endereco = bancoIntermediario.resultadoBusca & 0b111111111111;
 
-    opcodeDecodificado = opCodeParaInstrucao(opcode);
-    enderecoDecodificado = endereco;
+    bancoIntermediario.opcodeDecodificado = opCodeParaInstrucao(opcode);
+    bancoIntermediario.enderecoDecodificado = endereco;
 
     // Marcando possível dependência STOR
-    if (opcodeDecodificado == STOR_MX_DIR)
+    if (bancoIntermediario.opcodeDecodificado == STOR_MX_DIR)
     {
         dependenciaStorInstrucao = True;
         dependenciaStorLado = Direito;
-        pcAlterado = (int) enderecoDecodificado;
+        pcAlterado = (int) bancoIntermediario.enderecoDecodificado;
     }
-    if (opcodeDecodificado == STOR_MX_ESQ)
+    if (bancoIntermediario.opcodeDecodificado == STOR_MX_ESQ)
     {
         dependenciaStorInstrucao = True;
         dependenciaStorLado = Esquerdo;
-        pcAlterado = (int) enderecoDecodificado;
+        pcAlterado = (int) bancoIntermediario.enderecoDecodificado;
     }
 }
 
@@ -425,10 +421,10 @@ void pipelineBuscaOperandos()
     // Identificando dependências RAW
     if (dependenciaRAW == True)
     {
-        if (enderecoDecodificado == enderecoRAW)
+        if (bancoIntermediario.enderecoDecodificado == enderecoRAW)
         {
             // Inserindo bolha
-            operacaoASerExecutada = NENHUMA;
+            bancoIntermediario.operacaoASerExecutada = NENHUMA;
             flagEstagioCongelado[0] = True;
             flagEstagioCongelado[1] = True;
             dependenciaRAW = False;
@@ -439,12 +435,12 @@ void pipelineBuscaOperandos()
     // Identificando dependências JUMP+
     if (dependenciaJump == True)
     {
-        switch (opcodeDecodificado)
+        switch (bancoIntermediario.opcodeDecodificado)
         {
         case JUMPMais_DIR:
         case JUMPMais_ESQ:
             // Inserindo bolha
-            operacaoASerExecutada = NENHUMA;
+            bancoIntermediario.operacaoASerExecutada = NENHUMA;
             flagEstagioCongelado[0] = True;
             flagEstagioCongelado[1] = True;
             dependenciaJump = False;
@@ -455,7 +451,7 @@ void pipelineBuscaOperandos()
         }
     }
 
-    switch (opcodeDecodificado)
+    switch (bancoIntermediario.opcodeDecodificado)
     {
         // Casos em que o valor passado significa um endereço a ser usado
         case NENHUMA:
@@ -467,17 +463,17 @@ void pipelineBuscaOperandos()
         case JUMP_ESQ:
         case JUMPMais_DIR:
         case JUMPMais_ESQ:
-            dadoParaExecucao = enderecoDecodificado;
+            bancoIntermediario.dadoParaExecucao = bancoIntermediario.enderecoDecodificado;
             break;
         // Casos em que o valor passado significa um endereço a ser lido, cujo valor será usado
         default:
-            barramento.endereco = enderecoDecodificado;
+            barramento.endereco = bancoIntermediario.enderecoDecodificado;
             barramento.operacao = ler;
             executarBarramento();
-            dadoParaExecucao = converteDado(barramento.saida);
+            bancoIntermediario.dadoParaExecucao = converteDado(barramento.saida);
             break;
     }
-    operacaoASerExecutada = opcodeDecodificado;
+    bancoIntermediario.operacaoASerExecutada = bancoIntermediario.opcodeDecodificado;
 }
 
 
@@ -497,14 +493,14 @@ void pipelineExecucao()
     if (flagPegarNovoContador == True)
     {
         // Pega o novo contador
-        contadorClockExecucao = ciclosPorInstrucao[operacaoASerExecutada];
+        contadorClockExecucao = ciclosPorInstrucao[bancoIntermediario.operacaoASerExecutada];
 
         // Busca dependências RAW
-        switch (operacaoASerExecutada)
+        switch (bancoIntermediario.operacaoASerExecutada)
         {
             case STOR_MX:
                 dependenciaRAW = True;
-                enderecoRAW = dadoParaExecucao;
+                enderecoRAW = bancoIntermediario.dadoParaExecucao;
                 break;
             default:
                 dependenciaRAW = False;
@@ -512,7 +508,7 @@ void pipelineExecucao()
         }
 
         // Busca dependências JUMP (operações que alteram AC)
-        switch (operacaoASerExecutada)
+        switch (bancoIntermediario.operacaoASerExecutada)
         {
             case LOAD_ABSMX:
             case LOAD_MenosABSMX:
@@ -545,107 +541,107 @@ void pipelineExecucao()
         return;
     }
 
-    resultado_auxiliar = 0;
+    bancoIntermediario.resultado_auxiliar = 0;
 
-    instrucao = operacaoASerExecutada;
+    bancoIntermediario.instrucao = bancoIntermediario.operacaoASerExecutada;
     flagPegarNovoContador = True;
 
     // Liberando a escrita de resultado
     flagEstagioCongelado[4] = False;
 
-    switch (operacaoASerExecutada)
+    switch (bancoIntermediario.operacaoASerExecutada)
     {
     case ADD_MX:
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
-        unidadeLogicaAritmetica.entrada2 = dadoParaExecucao;
+        unidadeLogicaAritmetica.entrada2 = bancoIntermediario.dadoParaExecucao;
         unidadeLogicaAritmetica.operacao = soma;
         executarUla();
-        resultado = unidadeLogicaAritmetica.saida;
+        bancoIntermediario.resultado = unidadeLogicaAritmetica.saida;
         break;
     case ADD_ABSMX:
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
         //unidadeLogicaAritmetica.entrada2 = abs(dadoParaExecucao);
-        unidadeLogicaAritmetica.entrada2 = dadoParaExecucao;
+        unidadeLogicaAritmetica.entrada2 = bancoIntermediario.dadoParaExecucao;
         unidadeLogicaAritmetica.operacao = somam;
         executarUla();
-        resultado = unidadeLogicaAritmetica.saida;
+        bancoIntermediario.resultado = unidadeLogicaAritmetica.saida;
         break;
     case SUB_MX:
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
         //unidadeLogicaAritmetica.entrada2 = dadoParaExecucao;
         unidadeLogicaAritmetica.operacao = subtracao;
         executarUla();
-        resultado = unidadeLogicaAritmetica.saida;
+        bancoIntermediario.resultado = unidadeLogicaAritmetica.saida;
         break;
     case SUB_ABSMX:
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
         //unidadeLogicaAritmetica.entrada2 = abs(dadoParaExecucao);
-        unidadeLogicaAritmetica.entrada2 = dadoParaExecucao;
+        unidadeLogicaAritmetica.entrada2 = bancoIntermediario.dadoParaExecucao;
         unidadeLogicaAritmetica.operacao = subtracaom;
         executarUla();
-        resultado = unidadeLogicaAritmetica.saida;
+        bancoIntermediario.resultado = unidadeLogicaAritmetica.saida;
         break;
     case JUMP_DIR:
-        bancoRegistradores.PC = (int) dadoParaExecucao;
+        bancoRegistradores.PC = (int) bancoIntermediario.dadoParaExecucao;
         limparPipeline();
         ladoInstrucao = Direito;
-        instrucao = NENHUMA;
+        bancoIntermediario.instrucao = NENHUMA;
         break;
     case JUMP_ESQ:
-        bancoRegistradores.PC = (int) dadoParaExecucao;
+        bancoRegistradores.PC = (int) bancoIntermediario.dadoParaExecucao;
         limparPipeline();
         ladoInstrucao = Esquerdo;
-        instrucao = NENHUMA;
+        bancoIntermediario.instrucao = NENHUMA;
         break;
     case RSH:
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
         unidadeLogicaAritmetica.operacao = shiftParaDireita;
         executarUla();
-        resultado = unidadeLogicaAritmetica.saida;
+        bancoIntermediario.resultado = unidadeLogicaAritmetica.saida;
         // resultado = bancoRegistradores.AC / 2;
         break;
     case LSH:
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
         unidadeLogicaAritmetica.operacao = shiftParaEsquerda;
         executarUla();
-        resultado = unidadeLogicaAritmetica.saida;
+        bancoIntermediario.resultado = unidadeLogicaAritmetica.saida;
         // resultado = bancoRegistradores.AC * 2;
         break;
     case DIV_MX:
-        resultado = bancoRegistradores.AC % dadoParaExecucao;
-        resultado_auxiliar = bancoRegistradores.AC / dadoParaExecucao;
-        bancoRegistradores.AC = resultado;
-        bancoRegistradores.MQ = resultado_auxiliar;
+        bancoIntermediario.resultado = bancoRegistradores.AC % bancoIntermediario.dadoParaExecucao;
+        bancoIntermediario.resultado_auxiliar = bancoRegistradores.AC / bancoIntermediario.dadoParaExecucao;
+        bancoRegistradores.AC = bancoIntermediario.resultado;
+        bancoRegistradores.MQ = bancoIntermediario.resultado_auxiliar;
         break;
     case MUL_MX:
-        resultado = (dadoParaExecucao * bancoRegistradores.MQ) >> 39;
-        resultado_auxiliar = (dadoParaExecucao * bancoRegistradores.MQ) & 0b111111111111111111111111111111111111111;
+        bancoIntermediario.resultado = (bancoIntermediario.dadoParaExecucao * bancoRegistradores.MQ) >> 39;
+        bancoIntermediario.resultado_auxiliar = (bancoIntermediario.dadoParaExecucao * bancoRegistradores.MQ) & 0b111111111111111111111111111111111111111;
         break;
     case LOAD_ABSMX:
-        resultado = abs(dadoParaExecucao);
+        bancoIntermediario.resultado = abs(bancoIntermediario.dadoParaExecucao);
         break;
     case LOAD_MenosABSMX:
-        resultado = -1 * abs(dadoParaExecucao);
+        bancoIntermediario.resultado = -1 * abs(bancoIntermediario.dadoParaExecucao);
         break;
     case LOAD_MenosMX:
-        resultado = -1 * dadoParaExecucao;
+        bancoIntermediario.resultado = -1 * bancoIntermediario.dadoParaExecucao;
         break;
     case LOAD_MQ_MX:
-        resultado = dadoParaExecucao;
+        bancoIntermediario.resultado = bancoIntermediario.dadoParaExecucao;
         break;
     case LOAD_MX:
-        resultado = dadoParaExecucao;
+        bancoIntermediario.resultado = bancoIntermediario.dadoParaExecucao;
         break;
     case STOR_MX:
-        resultado = dadoParaExecucao;
+        bancoIntermediario.resultado = bancoIntermediario.dadoParaExecucao;
         break;
     case STOR_MX_ESQ:
         barramento.operacao = ler;
-        barramento.endereco = dadoParaExecucao;
+        barramento.endereco = bancoIntermediario.dadoParaExecucao;
         executarBarramento();
 
-        resultado = (barramento.saida & 0b1111111100000000000011111111111111111111);
-        resultado_auxiliar = dadoParaExecucao;
+        bancoIntermediario.resultado = (barramento.saida & 0b1111111100000000000011111111111111111111);
+        bancoIntermediario.resultado_auxiliar = bancoIntermediario.dadoParaExecucao;
         // barramento.operacao = escrever;
         // barramento.endereco = dadoParaExecucao;
         // barramento.entrada = (barramento.saida & 0b1111111100000000000011111111111111111111)| (bancoRegistradores.AC << 20);
@@ -653,11 +649,11 @@ void pipelineExecucao()
         break;
     case STOR_MX_DIR:
         barramento.operacao = ler;
-        barramento.endereco = dadoParaExecucao;
+        barramento.endereco = bancoIntermediario.dadoParaExecucao;
         executarBarramento();
 
-        resultado = (barramento.saida & 0b1111111111111111111111111111000000000000);
-        resultado_auxiliar = dadoParaExecucao;
+        bancoIntermediario.resultado = (barramento.saida & 0b1111111111111111111111111111000000000000);
+        bancoIntermediario.resultado_auxiliar = bancoIntermediario.dadoParaExecucao;
         // barramento.operacao = escrever;
         // barramento.endereco = dadoParaExecucao;
         // barramento.entrada = (barramento.saida & 0b1111111111111111111111111111000000000000) | bancoRegistradores.AC;
@@ -673,23 +669,23 @@ void pipelineExecucao()
     }
 
     // Casos com IF tem que ficar fora do switch...
-    if ((operacaoASerExecutada == JUMPMais_DIR && (int64_t) bancoRegistradores.AC >= 0))  // || operacaoASerExecutada == JUMP_DIR)
+    if ((bancoIntermediario.operacaoASerExecutada == JUMPMais_DIR && (int64_t) bancoRegistradores.AC >= 0))  // || operacaoASerExecutada == JUMP_DIR)
     {
-        bancoRegistradores.PC = (int) dadoParaExecucao;
+        bancoRegistradores.PC = (int) bancoIntermediario.dadoParaExecucao;
         limparPipeline();
         ladoInstrucao = Direito;
-        instrucao = NENHUMA;
+        bancoIntermediario.instrucao = NENHUMA;
     }
 
-    if ((operacaoASerExecutada == JUMPMais_ESQ && (int64_t) bancoRegistradores.AC >= 0))  // || operacaoASerExecutada == JUMP_ESQ)
+    if ((bancoIntermediario.operacaoASerExecutada == JUMPMais_ESQ && (int64_t) bancoRegistradores.AC >= 0))  // || operacaoASerExecutada == JUMP_ESQ)
     {
-        bancoRegistradores.PC = (int) dadoParaExecucao;
+        bancoRegistradores.PC = (int) bancoIntermediario.dadoParaExecucao;
         limparPipeline();
         ladoInstrucao = Esquerdo;
-        instrucao = NENHUMA;
+        bancoIntermediario.instrucao = NENHUMA;
     }
 
-    printf("\nOperacao feita: %d   resultado: %d   resultado_aux: %d", instrucao, resultado, resultado_auxiliar);
+    printf("\nOperacao feita: %d   resultado: %d   resultado_aux: %d", bancoIntermediario.instrucao, bancoIntermediario.resultado, bancoIntermediario.resultado_auxiliar);
 }  
 
 void pipelineEscritaResultados()
@@ -712,7 +708,7 @@ void pipelineEscritaResultados()
     
     flagEvitarSobreescrita = False;
     
-    switch (instrucao)
+    switch (bancoIntermediario.instrucao)
     {
         // Essas instruções fazem AC <- MQ
         case LOAD_MQ:
@@ -720,13 +716,13 @@ void pipelineEscritaResultados()
             break;
         // Essas instruções fazem MQ <- res
         case LOAD_MQ_MX:
-            bancoRegistradores.MQ = resultado;
+            bancoRegistradores.MQ = bancoIntermediario.resultado;
             break;
         // Essas instruções fazem MQ <- res_aux e AC <- res
         case MUL_MX:
         case DIV_MX:
-            bancoRegistradores.AC = resultado;
-            bancoRegistradores.MQ = resultado_auxiliar;
+            bancoRegistradores.AC = bancoIntermediario.resultado;
+            bancoRegistradores.MQ = bancoIntermediario.resultado_auxiliar;
             break;
         // Essas instruções fazem AC <- res
         case LOAD_MX:
@@ -739,26 +735,26 @@ void pipelineEscritaResultados()
         case SUB_ABSMX:
         case LSH:
         case RSH:
-            bancoRegistradores.AC = resultado;
+            bancoRegistradores.AC = bancoIntermediario.resultado;
             break;
         case STOR_MX:
-            barramento.endereco = resultado;
+            barramento.endereco = bancoIntermediario.resultado;
             barramento.operacao = escrever;
             barramento.entrada = inverteDado(bancoRegistradores.AC);
             executarBarramento();
             break;    
         case STOR_MX_DIR:
             barramento.operacao = escrever;
-            barramento.endereco = resultado_auxiliar;
-            barramento.entrada = resultado | bancoRegistradores.AC;
+            barramento.endereco = bancoIntermediario.resultado_auxiliar;
+            barramento.entrada = bancoIntermediario.resultado | bancoRegistradores.AC;
             executarBarramento();
             dependenciaStorInstrucao = False;
             flagAnularBusca = False;
             break;
         case STOR_MX_ESQ:
             barramento.operacao = escrever;
-            barramento.endereco = resultado_auxiliar;
-            barramento.entrada = resultado | (bancoRegistradores.AC << 20);
+            barramento.endereco = bancoIntermediario.resultado_auxiliar;
+            barramento.entrada = bancoIntermediario.resultado | (bancoRegistradores.AC << 20);
             executarBarramento();
             dependenciaStorInstrucao = False;
             flagAnularBusca = False;
@@ -843,19 +839,19 @@ void limparPipeline()
     /*
         Limpa o pipeline completamente
     */
-    resultado = 0;
-    resultado_auxiliar = 0;
-    instrucao = NENHUMA;
+    bancoIntermediario.resultado = 0;
+    bancoIntermediario.resultado_auxiliar = 0;
+    bancoIntermediario.instrucao = NENHUMA;
     
-    dadoParaExecucao = 0;
-    operacaoASerExecutada = NENHUMA;
+    bancoIntermediario.dadoParaExecucao = 0;
+    bancoIntermediario.operacaoASerExecutada = NENHUMA;
 
     flagPegarNovoContador = False;
 
-    opcodeDecodificado = NENHUMA;
-    enderecoDecodificado = 0;
+    bancoIntermediario.opcodeDecodificado = NENHUMA;
+    bancoIntermediario.enderecoDecodificado = 0;
 
-    resultadoBusca = 0;
+    bancoIntermediario.resultadoBusca = 0;
 
     flagEstagioCongelado[0] = False;
     flagEstagioCongelado[1] = False;
@@ -901,8 +897,6 @@ int main (int argc, char *argv[])
     bancoRegistradores.IBR = 0;
     bancoRegistradores.IR = 0;
 
-    dadoParaExecucao = 0;
-
     unidadeLogicaAritmetica.entrada1 = 0;
     unidadeLogicaAritmetica.entrada2 = 0;
     unidadeLogicaAritmetica.operacao = soma;
@@ -914,6 +908,18 @@ int main (int argc, char *argv[])
     barramento.saida = 0;
 
     pcAlterado = 0;
+
+    bancoIntermediario.opcodeDecodificado = NENHUMA;
+    bancoIntermediario.enderecoDecodificado = 0;
+
+    bancoIntermediario.operacaoASerExecutada = NENHUMA;
+    bancoIntermediario.dadoParaExecucao = 0;
+
+    bancoIntermediario.resultadoBusca = 0;
+
+    bancoIntermediario.resultado = 0;
+    bancoIntermediario.resultado_auxiliar = 0;
+    bancoIntermediario.instrucao = NENHUMA;
     
     carregarMemoria(arquivoEntrada, &memoria, &ciclosPorInstrucao);
     char *novo_nome = cria_nome_saida(argv[2]);
