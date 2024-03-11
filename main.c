@@ -10,28 +10,33 @@
 
 uint8_t* memoria;
 
+// Protótipos de funções
 void executarBarramento();
 void executarUla();
 void limparPipeline();
 
+// Auxiliar na organização do código
 typedef enum {False, True} booleano;
 
+// Operações que a ULA realiza
 typedef enum {
-    soma,
-    somam, // soma módulo: C = A + |B|
-    subtracao,
-    subtracaom, // subtração módulo C = A - |B|
-    multiplicacao,
-    divisao,
-    shiftParaEsquerda,
-    shiftParaDireita
+    soma,              // C = A + B
+    somam,             // C = A + |B|
+    subtracao,         // C = A - B
+    subtracaom,        // C = A - |B|
+    multiplicacao,     // C = A * B
+    divisao,           // C = A / B
+    shiftParaEsquerda, // C = A << 1
+    shiftParaDireita   // C = A >> 1
 } OperacaoULA;
 
+// Operações que o barramento realiza
 typedef enum {
     ler,
     escrever
 } OperacaoBarramento;
 
+// Barramento de memória
 typedef struct {
     int endereco;
     OperacaoBarramento operacao;
@@ -39,6 +44,7 @@ typedef struct {
     uint64_t saida;
 } BarramentoMemoria;
 
+// Unidade Lógica Aritmética (ULA)
 typedef struct {
     uint64_t entrada1;
     uint64_t entrada2;
@@ -46,6 +52,13 @@ typedef struct {
     uint64_t saida;
 } ULA;
 
+// Unidade de controle (UC)
+
+typedef struct {
+
+} UC;
+
+// Instruções que o IAS pode realizar
 typedef enum {
   LOAD_MQ, // 0   
   LOAD_MQ_MX,
@@ -72,11 +85,13 @@ typedef enum {
   NENHUMA
 } Instrucao;
 
+// Lados que podem ser lidos de memória
 typedef enum {
     Esquerdo,
     Direito
 } Lado;
 
+// Banco de registradores
 typedef struct {
     uint64_t AC;
     uint64_t MQ;
@@ -87,11 +102,24 @@ typedef struct {
     uint64_t IR;
 } BR;
 
+// Banco de registradores intermediários (interfaces de comunicação entre os estágios do pipeline)
+typedef struct {
+
+} BRIntermediario;
+
 Instrucao opCodeParaInstrucao(uint64_t opCode)
 {
     /*
-        Converte um OpCode para a sua instrução no enum de acordo com a tabela abaixo
+        Converte um opCode para a sua devida instrução (enum) de acordo com a tabela abaixo
 
+        Entrada:
+            uint64_t opCode: O opCode a ser convertido
+        Saída:
+            Instrucao i: A instrução que representa o opcode convertido
+
+        Caso o opCode não bata com nenhuma instrução conhecida, retorna-se NENHUMA
+
+        Tabela de opcodes:
         LOAD MQ - 00001010 (10)
         LOAD MQ,M(X) - 00001001 (9)
         STOR M(X) - 00100001 (33)
@@ -194,44 +222,19 @@ Instrucao opCodeParaInstrucao(uint64_t opCode)
     }
 }
 
+// Vetor que armazena a quantidade de ciclos de clock que uma determinada instrução deve levar
 int* ciclosPorInstrucao;
-// int ciclosPorInstrucao[] = {
-//     1, // LOAD_MQ,
-//     1, // LOAD_MQ_MX,
-//     1, // STOR_MX,
-//     1, // LOAD_MX,
-//     1, // LOAD_MenosMX,
-//     1, // LOAD_ABSMX,
-//     1, // LOAD_MenosABSMX,
-//     1, // JUMP_ESQ,
-//     1, // JUMP_DIR,
-//     1, // JUMPMais_ESQ,
-//     1, // JUMPMais_DIR,
-//     1, // ADD_MX,
-//     1, // ADD_ABSMX,
-//     1, // SUB_MX,
-//     1, // SUB_ABSMX,
-//     1, // MUL_MX,
-//     1, // DIV_MX,
-//     1, // LSH,
-//     1, // RSH,
-//     1, // STOR_MX_ESQ,
-//     1, // STOR_MX_DIR,
-//     1, // EXIT,
-//     1  // NENHUMA
-// };
 
+// Declarações de componentes
 BR bancoRegistradores;
 ULA unidadeLogicaAritmetica;
 BarramentoMemoria barramento;
 
-// Contadores de clock para que seja simulado o pipeline
+// Contador de clock (para que seja simulado o pipeline)
 int contadorClockExecucao = 1;
 
-//                                   B      D      Bo     Ex     Er
-booleano flagEstagioCongelado[] = {False, False, False, False, False};
 
-// Vira true toda vez que é feito uma escrita
+booleano flagEstagioCongelado[] = {False, False, False, False, False};
 booleano dependenciaRAW = False;
 
 // Indica o endereço que foi feita a escrita
@@ -258,43 +261,60 @@ Instrucao instrucao = NENHUMA;
 booleano flagTerminou = False;
 booleano flagCongelarTudo = False;
 
-// Um jump após um load dá um caso de dependência pois depende de AC
-// Exemplo:
-// LOAD M(0)
-// JUMP+ M(999, 0:19)
 booleano dependenciaJump = False;
 
 booleano dependenciaStorInstrucao = False;
 Lado dependenciaStorLado = Esquerdo;
 
-// void printStatusPipeline()
-// {
-//     printf("\n-- Ciclo --\n");
-//     printf("\nResultado busca: ");
-//     printBits(resultadoBusca);
-//     printf("\nResultado decodificacao: Opcode: %d  Endereco: %d", opcodeDecodificado, enderecoDecodificado);
-//     printf("\nResultado busca operandos: Operacao a ser executada: %d   dadoParaExecucao:  %d", operacaoASerExecutada, dadoParaExecucao);
-//     printf("\nResultado execucao: Instrucao: %d   resultado: %d   resultado_auxiliar: %d", instrucao, resultado, resultado_auxiliar);
-// }
-
-/*
-    TODO: Simular outros registradores também
-*/
-
 booleano flagAnularBusca = False;
 booleano flagEvitarSobreescrita = False;
-// booleano flagDependenciaBO = False;
+
+/*
+    Dependências identificadas e corrigidas:
+
+    1 - Dependência RAW
+
+    Ocorre quando há uma operação que utiliza o resultado de uma escrita logo após uma modificação no endereço
+    Exemplo:
+
+    STOR M(5)
+    LOAD M(5)
+
+    2 - Dependência JUMP+
+
+    Ocorre quando há uma operação de JUMP+ que necessita de uma operação ainda em andamento
+    Exemplo:
+    
+    LOAD M(5)
+    JUMP+ M(7,20:39)
+
+    3 - Dependência STOR M(X, [Esq, Dir])
+    
+    Ocorre quando há uma operação de STOR em uma linha de instrução que será lida antes da operação de STOR ter sido concluída
+    Ao contrário das demais dependências, é detectada e resolvida na decodificação e na busca, respectivamente
+    Exemplo:
+
+    Linha: Instrução
+    5-0: LOAD M(0)
+    5-1: STOR M(6,8:19)
+    6-0: LOAD M(999)
+*/
 
 void pipelineBusca()
 {
-    // Lê o lugar de memória dito por PC (lembrando que pode ser esquerdo ou direito tbm)
-    // e guarda o OpCode + dado em um lugar [A]
+    /*
+        Executa a fase de busca do pipeline
+
+        ... Mais documentação vem aqui
+    */
     
+    // Caso o a busca esteja congelada, não faça nada
     if (flagEstagioCongelado[0] == True)
     {
         return;
     }
     
+    // Caso todo o pipeline deva ser congelado após a execução dessa fase
     if (flagCongelarTudo == True)
     {
         flagEstagioCongelado[0] = True;
@@ -304,22 +324,19 @@ void pipelineBusca()
         flagCongelarTudo = False;
     }
 
+    // Caso deva ser inserida uma bolha na busca [Dependência STOR M(X, [Esq, Dir])]
     if (flagAnularBusca == True)
     {
         resultadoBusca = 0;    
         return;
     }
 
-
+    // Identificando a dependência de STOR M(X, [Esq, Dir])
     if (dependenciaStorInstrucao == True)
     {
         if (bancoRegistradores.PC == pcAlterado && ladoInstrucao == dependenciaStorLado)
         {
-            printf("\nDependencia stor");
-            // flagDependenciaBO = True;
-            //flagEstagioCongelado[0] = True;
-            //flagEstagioCongelado[1] = True;
-            //flagEstagioCongelado[2] = True;
+            // Dependência STOR identificada
             flagAnularBusca = True;
             flagEvitarSobreescrita = True;
             resultadoBusca = 0;
@@ -327,6 +344,8 @@ void pipelineBusca()
         }
     }
     
+    // Buscando o dado de M(PC)
+    // Barramento sempre lê uma linha inteira de memória
     barramento.endereco = bancoRegistradores.PC;
     barramento.operacao = ler;
     executarBarramento();
@@ -334,36 +353,34 @@ void pipelineBusca()
     //uint64_t enderecoBuscado = barramento.saida;
     bancoRegistradores.MBR = barramento.saida;
 
-    //uint64_t ladoEsquerdo = (enderecoBuscado & 0b1111111111111111111100000000000000000000) >> 20;
-    bancoRegistradores.IBR = (bancoRegistradores.MBR & 0b1111111111111111111100000000000000000000) >> 20;
-    //uint64_t ladoDireito = enderecoBuscado & 0b11111111111111111111;
+    uint64_t ladoEsquerdo = (bancoRegistradores.MBR & 0b1111111111111111111100000000000000000000) >> 20;
+    uint64_t ladoDireito = bancoRegistradores.MBR & 0b11111111111111111111;
     
     if (ladoInstrucao == Esquerdo)
     {
+        // Fazer coisas do lado esquerdo aqui...
         resultadoBusca = ladoEsquerdo;
         ladoInstrucao = Direito;
     }
     else 
     {
+        // Fazer coisas do lado direito aqui...
         ladoInstrucao = Esquerdo;
         resultadoBusca = ladoDireito;
         bancoRegistradores.PC =  bancoRegistradores.PC + 1;
     }
-
-    // if (flagCongelarTudo == True)
-    // {
-    //     flagEstagioCongelado[0] = True;
-    //     flagEstagioCongelado[1] = True;
-    //     flagEstagioCongelado[2] = True;
-    //     flagEstagioCongelado[4] = True;
-    //     flagCongelarTudo = False;
-    // }
-
-    // printStatusPipeline();
 }
 
 void pipelineDecodificacao()
 {
+    /*
+        Executa a fase de decodificação do pipeline
+
+        ... Mais documentação vem aqui
+    */
+    
+    // Caso o estágio esteja congelado ou seja necessário evitar a sobreescrita por dependência STOR
+    // Obs: A sobreescrita foi corrigida experimentalmente com essa flag
     if (flagEstagioCongelado[1] == True || flagEvitarSobreescrita == True)
     {
         return;
@@ -379,31 +396,33 @@ void pipelineDecodificacao()
     opcodeDecodificado = opCodeParaInstrucao(opcode);
     enderecoDecodificado = endereco;
 
+    // Marcando possível dependência STOR
     if (opcodeDecodificado == STOR_MX_DIR)
     {
         dependenciaStorInstrucao = True;
-
         dependenciaStorLado = Direito;
-
         pcAlterado = (int) enderecoDecodificado;
     }
     if (opcodeDecodificado == STOR_MX_ESQ)
     {
         dependenciaStorInstrucao = True;
-
         dependenciaStorLado = Esquerdo;
-
         pcAlterado = (int) enderecoDecodificado;
     }
 }
 
 void pipelineBuscaOperandos()
 {
+    /*
+        Executa a fase de busca de operandos do pipeline
+    */
+
     if (flagEstagioCongelado[2] == True || flagEvitarSobreescrita == True)
     {
         return;
     }
 
+    // Identificando dependências RAW
     if (dependenciaRAW == True)
     {
         if (enderecoDecodificado == enderecoRAW)
@@ -417,12 +436,14 @@ void pipelineBuscaOperandos()
         }
     }
 
+    // Identificando dependências JUMP+
     if (dependenciaJump == True)
     {
         switch (opcodeDecodificado)
         {
         case JUMPMais_DIR:
         case JUMPMais_ESQ:
+            // Inserindo bolha
             operacaoASerExecutada = NENHUMA;
             flagEstagioCongelado[0] = True;
             flagEstagioCongelado[1] = True;
@@ -436,6 +457,7 @@ void pipelineBuscaOperandos()
 
     switch (opcodeDecodificado)
     {
+        // Casos em que o valor passado significa um endereço a ser usado
         case NENHUMA:
             break;
         case STOR_MX:
@@ -447,12 +469,7 @@ void pipelineBuscaOperandos()
         case JUMPMais_ESQ:
             dadoParaExecucao = enderecoDecodificado;
             break;
-        case DIV_MX:
-            barramento.endereco = enderecoDecodificado;
-            barramento.operacao = ler;
-            executarBarramento();
-            dadoParaExecucao = converteDado(barramento.saida);    
-            break;
+        // Casos em que o valor passado significa um endereço a ser lido, cujo valor será usado
         default:
             barramento.endereco = enderecoDecodificado;
             barramento.operacao = ler;
@@ -464,14 +481,25 @@ void pipelineBuscaOperandos()
 }
 
 
+// Flag que indica quando uma execução terminou após N ciclos de clock
 booleano flagPegarNovoContador = False;
 
 
 void pipelineExecucao() 
 {
+    /*
+        Executa a fase de Execução do pipeline
+
+        ... Mais documentação vem aqui
+    */
+
+    // Caso a instrução anterior tenha terminado
     if (flagPegarNovoContador == True)
     {
+        // Pega o novo contador
         contadorClockExecucao = ciclosPorInstrucao[operacaoASerExecutada];
+
+        // Busca dependências RAW
         switch (operacaoASerExecutada)
         {
             case STOR_MX:
@@ -483,6 +511,7 @@ void pipelineExecucao()
                 break;
         }
 
+        // Busca dependências JUMP (operações que alteram AC)
         switch (operacaoASerExecutada)
         {
             case LOAD_ABSMX:
@@ -508,16 +537,11 @@ void pipelineExecucao()
         flagPegarNovoContador = False;
         flagCongelarTudo = True;
     }
-    // Se a instrução precisa esperar ser feita
+
+    // Se a instrução ainda não terminou...
     if (contadorClockExecucao > 1)
     {
         contadorClockExecucao -= 1;
-
-        // Congelando o pipeline após executar uma vez
-        //flagEstagioCongelado[0] = True;
-        //flagEstagioCongelado[1] = True;
-        //flagEstagioCongelado[2] = True;
-        //flagEstagioCongelado[4] = True;
         return;
     }
 
@@ -526,7 +550,7 @@ void pipelineExecucao()
     instrucao = operacaoASerExecutada;
     flagPegarNovoContador = True;
 
-    // Liberando o pipeline
+    // Liberando a escrita de resultado
     flagEstagioCongelado[4] = False;
 
     switch (operacaoASerExecutada)
@@ -648,7 +672,7 @@ void pipelineExecucao()
         break;
     }
 
-    // Casos com IF tem que ficar fora do switch
+    // Casos com IF tem que ficar fora do switch...
     if ((operacaoASerExecutada == JUMPMais_DIR && (int64_t) bancoRegistradores.AC >= 0))  // || operacaoASerExecutada == JUMP_DIR)
     {
         bancoRegistradores.PC = (int) dadoParaExecucao;
@@ -670,12 +694,17 @@ void pipelineExecucao()
 
 void pipelineEscritaResultados()
 {
-    // Se o dado anterior não estiver pronto, saia
+    /*
+        Executa a fase de escrita dos resultados do pipeline
+    */
+
+    // Se o dado anterior não estiver pronto
     if (flagEstagioCongelado[4] == True)
     {
         return;
     }
 
+    // Descongelando o pipeline :D
     flagEstagioCongelado[0] = False;
     flagEstagioCongelado[1] = False;
     flagEstagioCongelado[2] = False;
@@ -685,7 +714,7 @@ void pipelineEscritaResultados()
     
     switch (instrucao)
     {
-        // Essa instrução faz AC <- MQ
+        // Essas instruções fazem AC <- MQ
         case LOAD_MQ:
             bancoRegistradores.AC = bancoRegistradores.MQ;
             break;
@@ -725,8 +754,6 @@ void pipelineEscritaResultados()
             executarBarramento();
             dependenciaStorInstrucao = False;
             flagAnularBusca = False;
-            //flagEvitarSobreescrita = True;
-            // flagDependenciaBO = False;
             break;
         case STOR_MX_ESQ:
             barramento.operacao = escrever;
@@ -735,8 +762,6 @@ void pipelineEscritaResultados()
             executarBarramento();
             dependenciaStorInstrucao = False;
             flagAnularBusca = False;
-            //flagEvitarSobreescrita = True;
-            // flagDependenciaBO = False;
             break;
         case JUMP_DIR:
         case JUMP_ESQ:
@@ -750,6 +775,9 @@ void pipelineEscritaResultados()
 
 void executarBarramento()
 {
+    /*
+        Realiza a operação atualmente setada no barramento com os operandos necessários
+    */
     if (barramento.operacao == ler)
     {
         uint64_t res = buscaNaMemoria(memoria, barramento.endereco);
@@ -799,8 +827,7 @@ void executarUla()
 
 void simulacao()
 {
-    // Ciclos de clock
-    
+    // Cada vez que é percorrido esse laço é simulado um ciclo de clock do processador
     while (flagTerminou != True)
     {
         pipelineEscritaResultados();
@@ -813,6 +840,9 @@ void simulacao()
 
 void limparPipeline()
 {
+    /*
+        Limpa o pipeline completamente
+    */
     resultado = 0;
     resultado_auxiliar = 0;
     instrucao = NENHUMA;
@@ -862,6 +892,7 @@ int main (int argc, char *argv[])
         ciclosPorInstrucao[i] = 1;
     }
 
+    // Inicializando valores
     bancoRegistradores.AC = 0;
     bancoRegistradores.MQ = 0;
     bancoRegistradores.MBR = 0;
@@ -886,10 +917,8 @@ int main (int argc, char *argv[])
     
     carregarMemoria(arquivoEntrada, &memoria, &ciclosPorInstrucao);
     char *novo_nome = cria_nome_saida(argv[2]);
-    //dumpDaMemoria(memoria, novo_nome);
-    simulacao();   
 
-    
+    simulacao();   
 
     dumpDaMemoria(memoria, novo_nome);
         
@@ -897,48 +926,4 @@ int main (int argc, char *argv[])
     free(ciclosPorInstrucao);
     fclose(arquivoEntrada);
     return 0;
-    
 }
-
-/*
-Testes:
-
-Instruções provavelmente OK:
-LOAD MQ, MX
-STOR MX
-LOAD MX
-LOAD MQ, 
-LSH,
-RSH,
-ADD MX
-EXIT
-NENHUMA
-LOAD |MX|
-LOAD- MX
-LOAD- |MX|
-ADD |MX|
-SUB |MX|
-MUL MX
-JUMP_ESQ
-JUMPMais_ESQ,
-JUMP_DIR,
-JUMPMais_DIR
-
-Instruções parcialmente OK (faltam mais testes mas não apresentaram problemas):
-DIV_MX
-
-Instruções não OK:
-
-Instruções não testadas ainda:
-STOR_MX_ESQ,
-STOR_MX_DIR, 
-
-Coisas estranhas:
-> Guardar números negativos
-
-
-Problemas:
-> Divisão com números negativos
-
-
-*/
