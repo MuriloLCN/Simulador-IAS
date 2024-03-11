@@ -62,6 +62,10 @@ typedef enum {
 
 typedef struct {
     // Flags normais de controle
+    booleano carry;
+    booleano par;
+    booleano zero;
+    booleano sinal;
 
     // Flags extras de controle
 
@@ -122,7 +126,6 @@ typedef enum {
   EXIT,
   NENHUMA
 } Instrucao;
-
 
 
 // Banco de registradores
@@ -828,6 +831,11 @@ void executarUla()
     default:
         break;
     }
+
+    // Flags da UC
+    unidadeDeControle.par = (unidadeLogicaAritmetica.saida % 2 == 0) ? True : False;
+    unidadeDeControle.zero = (unidadeLogicaAritmetica.saida == 0) ? True : False;
+    unidadeDeControle.sinal = (unidadeLogicaAritmetica.saida < 0) ? True : False;
 }
 
 void simulacao()
@@ -946,6 +954,10 @@ int main (int argc, char *argv[])
     unidadeDeControle.flagAnularBusca = False;
     unidadeDeControle.flagEvitarSobreescrita = False;
     unidadeDeControle.flagPegarNovoContador = False;
+    unidadeDeControle.carry = False; // Sem carry
+    unidadeDeControle.par = True; // Ula começa com zero
+    unidadeDeControle.zero = True; // Ula começa com zero
+    unidadeDeControle.sinal = False; // Par
     
     carregarMemoria(arquivoEntrada, &memoria, &ciclosPorInstrucao);
     char *novo_nome = cria_nome_saida(argv[2]);
