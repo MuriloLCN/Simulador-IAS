@@ -4,7 +4,7 @@
 #include <math.h>
 #include <inttypes.h>
 
-#include "ias.h"
+#include "parse_entrada.h"
 
 #define TAMANHO_MEMORIA 4096
 
