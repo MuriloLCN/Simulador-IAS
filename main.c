@@ -881,7 +881,7 @@ void limparPipeline()
 
 int main (int argc, char *argv[])
 {
-    if (argc != 5 || strcmp(argv[1], "-p") != 0 || strcmp(argv[3], "-m"))
+    if (argc != 5 || strcmp(argv[1], "-p") != 0 || strcmp(argv[3], "-i") != 0)
     {
         printf("\nParametros incorretos");
         // TODO: Colocar mensagem mais detalhada aqui
@@ -905,15 +905,18 @@ int main (int argc, char *argv[])
         ciclosPorInstrucao[i] = 1;
     }
 
+    int endIncialPC = atoi(argv[4]);
+    
     // BR
     bancoRegistradores.AC = 0;
     bancoRegistradores.MQ = 0;
     bancoRegistradores.MBR = 0;
-    bancoRegistradores.PC = 4;
+    bancoRegistradores.PC = endIncialPC;
     bancoRegistradores.MAR = 0;
     bancoRegistradores.IBR = 0;
     bancoRegistradores.IR = 0;
 
+    // print(bancoRegistradores.PC);
     // ULA
     unidadeLogicaAritmetica.entrada1 = 0;
     unidadeLogicaAritmetica.entrada2 = 0;
