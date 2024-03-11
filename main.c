@@ -52,10 +52,48 @@ typedef struct {
     uint64_t saida;
 } ULA;
 
+// Lados que podem ser lidos de memória
+typedef enum {
+    Esquerdo,
+    Direito
+} Lado;
+
 // Unidade de controle (UC)
 
 typedef struct {
+    // Flags normais de controle
 
+    // Flags extras de controle
+
+    // Indicam quais estágios estão congelados
+    booleano flagEstagioCongelado[5];
+
+    // Indica se há uma possível dependência RAW
+    booleano dependenciaRAW;
+    int enderecoRAW;
+
+    // Indica se há uma possível dependência STOR
+    booleano dependenciaStorInstrucao;
+    Lado dependenciaStorLado;
+    int pcAlterado;
+
+    // Lado atual para ler a instrução
+    Lado ladoInstrucao;
+
+    // Indica se a simulação terminou
+    booleano flagTerminou;
+
+    // Indica se tudo deve ser congelado no próximo ciclo
+    booleano flagCongelarTudo;
+
+    booleano dependenciaJump;
+
+    // Flags extras para controle e tratamento de dependências
+    booleano flagAnularBusca;
+    booleano flagEvitarSobreescrita;
+
+    // Flag que indica quando uma execução terminou após N ciclos de clock
+    booleano flagPegarNovoContador;
 } UC;
 
 // Instruções que o IAS pode realizar
@@ -85,11 +123,7 @@ typedef enum {
   NENHUMA
 } Instrucao;
 
-// Lados que podem ser lidos de memória
-typedef enum {
-    Esquerdo,
-    Direito
-} Lado;
+
 
 // Banco de registradores
 typedef struct {
@@ -104,17 +138,21 @@ typedef struct {
 
 // Banco de registradores intermediários (interfaces de comunicação entre os estágios do pipeline)
 typedef struct {
+    // Resultados da busca
+    uint64_t resultadoBusca;
+
+    // Resultados da decodificação
     Instrucao opcodeDecodificado;
     uint64_t enderecoDecodificado;
 
-    uint64_t resultadoBusca;
+    // Resultados da busca de operandos
+    Instrucao operacaoASerExecutada;
+    uint64_t dadoParaExecucao;
 
+    // Resultados da execução
     uint64_t resultado;
     uint64_t resultado_auxiliar;
     Instrucao instrucao;
-
-    Instrucao operacaoASerExecutada;
-    uint64_t dadoParaExecucao;
 } BRIntermediario;
 
 Instrucao opCodeParaInstrucao(uint64_t opCode)
@@ -235,35 +273,15 @@ Instrucao opCodeParaInstrucao(uint64_t opCode)
 // Vetor que armazena a quantidade de ciclos de clock que uma determinada instrução deve levar
 int* ciclosPorInstrucao;
 
+// Contador de clock (para que seja simulado o pipeline)
+int contadorClockExecucao = 1;
+
 // Declarações de componentes
 BR bancoRegistradores;
 ULA unidadeLogicaAritmetica;
 BarramentoMemoria barramento;
 BRIntermediario bancoIntermediario;
 UC unidadeDeControle;
-
-// Contador de clock (para que seja simulado o pipeline)
-int contadorClockExecucao = 1;
-
-booleano flagEstagioCongelado[] = {False, False, False, False, False};
-booleano dependenciaRAW = False;
-
-// Indica o endereço que foi feita a escrita
-int enderecoRAW = 0;
-int pcAlterado = 0;
-
-Lado ladoInstrucao = Esquerdo;
-
-booleano flagTerminou = False;
-booleano flagCongelarTudo = False;
-
-booleano dependenciaJump = False;
-
-booleano dependenciaStorInstrucao = False;
-Lado dependenciaStorLado = Esquerdo;
-
-booleano flagAnularBusca = False;
-booleano flagEvitarSobreescrita = False;
 
 /*
     Dependências identificadas e corrigidas:
@@ -305,36 +323,36 @@ void pipelineBusca()
     */
     
     // Caso o a busca esteja congelada, não faça nada
-    if (flagEstagioCongelado[0] == True)
+    if (unidadeDeControle.flagEstagioCongelado[0] == True)
     {
         return;
     }
     
     // Caso todo o pipeline deva ser congelado após a execução dessa fase
-    if (flagCongelarTudo == True)
+    if (unidadeDeControle.flagCongelarTudo == True)
     {
-        flagEstagioCongelado[0] = True;
-        flagEstagioCongelado[1] = True;
-        flagEstagioCongelado[2] = True;
-        flagEstagioCongelado[4] = True;
-        flagCongelarTudo = False;
+        unidadeDeControle.flagEstagioCongelado[0] = True;
+        unidadeDeControle.flagEstagioCongelado[1] = True;
+        unidadeDeControle.flagEstagioCongelado[2] = True;
+        unidadeDeControle.flagEstagioCongelado[4] = True;
+        unidadeDeControle.flagCongelarTudo = False;
     }
 
     // Caso deva ser inserida uma bolha na busca [Dependência STOR M(X, [Esq, Dir])]
-    if (flagAnularBusca == True)
+    if (unidadeDeControle.flagAnularBusca == True)
     {
         bancoIntermediario.resultadoBusca = 0;    
         return;
     }
 
     // Identificando a dependência de STOR M(X, [Esq, Dir])
-    if (dependenciaStorInstrucao == True)
+    if (unidadeDeControle.dependenciaStorInstrucao == True)
     {
-        if (bancoRegistradores.PC == pcAlterado && ladoInstrucao == dependenciaStorLado)
+        if (bancoRegistradores.PC == unidadeDeControle.pcAlterado && unidadeDeControle.ladoInstrucao == unidadeDeControle.dependenciaStorLado)
         {
             // Dependência STOR identificada
-            flagAnularBusca = True;
-            flagEvitarSobreescrita = True;
+            unidadeDeControle.flagAnularBusca = True;
+            unidadeDeControle.flagEvitarSobreescrita = True;
             bancoIntermediario.resultadoBusca = 0;
             return;
         }
@@ -352,16 +370,16 @@ void pipelineBusca()
     uint64_t ladoEsquerdo = (bancoRegistradores.MBR & 0b1111111111111111111100000000000000000000) >> 20;
     uint64_t ladoDireito = bancoRegistradores.MBR & 0b11111111111111111111;
     
-    if (ladoInstrucao == Esquerdo)
+    if (unidadeDeControle.ladoInstrucao == Esquerdo)
     {
         // Fazer coisas do lado esquerdo aqui...
         bancoIntermediario.resultadoBusca = ladoEsquerdo;
-        ladoInstrucao = Direito;
+        unidadeDeControle.ladoInstrucao = Direito;
     }
     else 
     {
         // Fazer coisas do lado direito aqui...
-        ladoInstrucao = Esquerdo;
+        unidadeDeControle.ladoInstrucao = Esquerdo;
         bancoIntermediario.resultadoBusca = ladoDireito;
         bancoRegistradores.PC =  bancoRegistradores.PC + 1;
     }
@@ -377,7 +395,7 @@ void pipelineDecodificacao()
     
     // Caso o estágio esteja congelado ou seja necessário evitar a sobreescrita por dependência STOR
     // Obs: A sobreescrita foi corrigida experimentalmente com essa flag
-    if (flagEstagioCongelado[1] == True || flagEvitarSobreescrita == True)
+    if (unidadeDeControle.flagEstagioCongelado[1] == True || unidadeDeControle.flagEvitarSobreescrita == True)
     {
         return;
     }
@@ -395,15 +413,15 @@ void pipelineDecodificacao()
     // Marcando possível dependência STOR
     if (bancoIntermediario.opcodeDecodificado == STOR_MX_DIR)
     {
-        dependenciaStorInstrucao = True;
-        dependenciaStorLado = Direito;
-        pcAlterado = (int) bancoIntermediario.enderecoDecodificado;
+        unidadeDeControle.dependenciaStorInstrucao = True;
+        unidadeDeControle.dependenciaStorLado = Direito;
+        unidadeDeControle.pcAlterado = (int) bancoIntermediario.enderecoDecodificado;
     }
     if (bancoIntermediario.opcodeDecodificado == STOR_MX_ESQ)
     {
-        dependenciaStorInstrucao = True;
-        dependenciaStorLado = Esquerdo;
-        pcAlterado = (int) bancoIntermediario.enderecoDecodificado;
+        unidadeDeControle.dependenciaStorInstrucao = True;
+        unidadeDeControle.dependenciaStorLado = Esquerdo;
+        unidadeDeControle.pcAlterado = (int) bancoIntermediario.enderecoDecodificado;
     }
 }
 
@@ -413,27 +431,27 @@ void pipelineBuscaOperandos()
         Executa a fase de busca de operandos do pipeline
     */
 
-    if (flagEstagioCongelado[2] == True || flagEvitarSobreescrita == True)
+    if (unidadeDeControle.flagEstagioCongelado[2] == True || unidadeDeControle.flagEvitarSobreescrita == True)
     {
         return;
     }
 
     // Identificando dependências RAW
-    if (dependenciaRAW == True)
+    if (unidadeDeControle.dependenciaRAW == True)
     {
-        if (bancoIntermediario.enderecoDecodificado == enderecoRAW)
+        if (bancoIntermediario.enderecoDecodificado == unidadeDeControle.enderecoRAW)
         {
             // Inserindo bolha
             bancoIntermediario.operacaoASerExecutada = NENHUMA;
-            flagEstagioCongelado[0] = True;
-            flagEstagioCongelado[1] = True;
-            dependenciaRAW = False;
+            unidadeDeControle.flagEstagioCongelado[0] = True;
+            unidadeDeControle.flagEstagioCongelado[1] = True;
+            unidadeDeControle.dependenciaRAW = False;
             return;
         }
     }
 
     // Identificando dependências JUMP+
-    if (dependenciaJump == True)
+    if (unidadeDeControle.dependenciaJump == True)
     {
         switch (bancoIntermediario.opcodeDecodificado)
         {
@@ -441,9 +459,9 @@ void pipelineBuscaOperandos()
         case JUMPMais_ESQ:
             // Inserindo bolha
             bancoIntermediario.operacaoASerExecutada = NENHUMA;
-            flagEstagioCongelado[0] = True;
-            flagEstagioCongelado[1] = True;
-            dependenciaJump = False;
+            unidadeDeControle.flagEstagioCongelado[0] = True;
+            unidadeDeControle.flagEstagioCongelado[1] = True;
+            unidadeDeControle.dependenciaJump = False;
             break;
         
         default:
@@ -476,11 +494,6 @@ void pipelineBuscaOperandos()
     bancoIntermediario.operacaoASerExecutada = bancoIntermediario.opcodeDecodificado;
 }
 
-
-// Flag que indica quando uma execução terminou após N ciclos de clock
-booleano flagPegarNovoContador = False;
-
-
 void pipelineExecucao() 
 {
     /*
@@ -490,7 +503,7 @@ void pipelineExecucao()
     */
 
     // Caso a instrução anterior tenha terminado
-    if (flagPegarNovoContador == True)
+    if (unidadeDeControle.flagPegarNovoContador == True)
     {
         // Pega o novo contador
         contadorClockExecucao = ciclosPorInstrucao[bancoIntermediario.operacaoASerExecutada];
@@ -499,11 +512,11 @@ void pipelineExecucao()
         switch (bancoIntermediario.operacaoASerExecutada)
         {
             case STOR_MX:
-                dependenciaRAW = True;
-                enderecoRAW = bancoIntermediario.dadoParaExecucao;
+                unidadeDeControle.dependenciaRAW = True;
+                unidadeDeControle.enderecoRAW = bancoIntermediario.dadoParaExecucao;
                 break;
             default:
-                dependenciaRAW = False;
+                unidadeDeControle.dependenciaRAW = False;
                 break;
         }
 
@@ -524,14 +537,14 @@ void pipelineExecucao()
             case SUB_ABSMX:
             case LSH:
             case RSH:
-                dependenciaJump = True;
+                unidadeDeControle.dependenciaJump = True;
                 break;
             default:
-                dependenciaJump = False;
+                unidadeDeControle.dependenciaJump = False;
         }
 
-        flagPegarNovoContador = False;
-        flagCongelarTudo = True;
+        unidadeDeControle.flagPegarNovoContador = False;
+        unidadeDeControle.flagCongelarTudo = True;
     }
 
     // Se a instrução ainda não terminou...
@@ -544,10 +557,10 @@ void pipelineExecucao()
     bancoIntermediario.resultado_auxiliar = 0;
 
     bancoIntermediario.instrucao = bancoIntermediario.operacaoASerExecutada;
-    flagPegarNovoContador = True;
+    unidadeDeControle.flagPegarNovoContador = True;
 
     // Liberando a escrita de resultado
-    flagEstagioCongelado[4] = False;
+    unidadeDeControle.flagEstagioCongelado[4] = False;
 
     switch (bancoIntermediario.operacaoASerExecutada)
     {
@@ -584,13 +597,13 @@ void pipelineExecucao()
     case JUMP_DIR:
         bancoRegistradores.PC = (int) bancoIntermediario.dadoParaExecucao;
         limparPipeline();
-        ladoInstrucao = Direito;
+        unidadeDeControle.ladoInstrucao = Direito;
         bancoIntermediario.instrucao = NENHUMA;
         break;
     case JUMP_ESQ:
         bancoRegistradores.PC = (int) bancoIntermediario.dadoParaExecucao;
         limparPipeline();
-        ladoInstrucao = Esquerdo;
+        unidadeDeControle.ladoInstrucao = Esquerdo;
         bancoIntermediario.instrucao = NENHUMA;
         break;
     case RSH:
@@ -642,10 +655,6 @@ void pipelineExecucao()
 
         bancoIntermediario.resultado = (barramento.saida & 0b1111111100000000000011111111111111111111);
         bancoIntermediario.resultado_auxiliar = bancoIntermediario.dadoParaExecucao;
-        // barramento.operacao = escrever;
-        // barramento.endereco = dadoParaExecucao;
-        // barramento.entrada = (barramento.saida & 0b1111111100000000000011111111111111111111)| (bancoRegistradores.AC << 20);
-        // executarBarramento();
         break;
     case STOR_MX_DIR:
         barramento.operacao = ler;
@@ -660,7 +669,7 @@ void pipelineExecucao()
         // executarBarramento();
         break;
     case EXIT:
-        flagTerminou = True;
+        unidadeDeControle.flagTerminou = True;
         break;
     case NENHUMA:
     case LOAD_MQ:
@@ -673,7 +682,7 @@ void pipelineExecucao()
     {
         bancoRegistradores.PC = (int) bancoIntermediario.dadoParaExecucao;
         limparPipeline();
-        ladoInstrucao = Direito;
+        unidadeDeControle.ladoInstrucao = Direito;
         bancoIntermediario.instrucao = NENHUMA;
     }
 
@@ -681,7 +690,7 @@ void pipelineExecucao()
     {
         bancoRegistradores.PC = (int) bancoIntermediario.dadoParaExecucao;
         limparPipeline();
-        ladoInstrucao = Esquerdo;
+        unidadeDeControle.ladoInstrucao = Esquerdo;
         bancoIntermediario.instrucao = NENHUMA;
     }
 
@@ -695,18 +704,18 @@ void pipelineEscritaResultados()
     */
 
     // Se o dado anterior não estiver pronto
-    if (flagEstagioCongelado[4] == True)
+    if (unidadeDeControle.flagEstagioCongelado[4] == True)
     {
         return;
     }
 
     // Descongelando o pipeline :D
-    flagEstagioCongelado[0] = False;
-    flagEstagioCongelado[1] = False;
-    flagEstagioCongelado[2] = False;
-    flagEstagioCongelado[3] = False;
+    unidadeDeControle.flagEstagioCongelado[0] = False;
+    unidadeDeControle.flagEstagioCongelado[1] = False;
+    unidadeDeControle.flagEstagioCongelado[2] = False;
+    unidadeDeControle.flagEstagioCongelado[3] = False;
     
-    flagEvitarSobreescrita = False;
+    unidadeDeControle.flagEvitarSobreescrita = False;
     
     switch (bancoIntermediario.instrucao)
     {
@@ -748,16 +757,16 @@ void pipelineEscritaResultados()
             barramento.endereco = bancoIntermediario.resultado_auxiliar;
             barramento.entrada = bancoIntermediario.resultado | bancoRegistradores.AC;
             executarBarramento();
-            dependenciaStorInstrucao = False;
-            flagAnularBusca = False;
+            unidadeDeControle.dependenciaStorInstrucao = False;
+            unidadeDeControle.flagAnularBusca = False;
             break;
         case STOR_MX_ESQ:
             barramento.operacao = escrever;
             barramento.endereco = bancoIntermediario.resultado_auxiliar;
             barramento.entrada = bancoIntermediario.resultado | (bancoRegistradores.AC << 20);
             executarBarramento();
-            dependenciaStorInstrucao = False;
-            flagAnularBusca = False;
+            unidadeDeControle.dependenciaStorInstrucao = False;
+            unidadeDeControle.flagAnularBusca = False;
             break;
         case JUMP_DIR:
         case JUMP_ESQ:
@@ -824,7 +833,7 @@ void executarUla()
 void simulacao()
 {
     // Cada vez que é percorrido esse laço é simulado um ciclo de clock do processador
-    while (flagTerminou != True)
+    while (unidadeDeControle.flagTerminou != True)
     {
         pipelineEscritaResultados();
         pipelineExecucao();
@@ -846,20 +855,20 @@ void limparPipeline()
     bancoIntermediario.dadoParaExecucao = 0;
     bancoIntermediario.operacaoASerExecutada = NENHUMA;
 
-    flagPegarNovoContador = False;
+    unidadeDeControle.flagPegarNovoContador = False;
 
     bancoIntermediario.opcodeDecodificado = NENHUMA;
     bancoIntermediario.enderecoDecodificado = 0;
 
     bancoIntermediario.resultadoBusca = 0;
 
-    flagEstagioCongelado[0] = False;
-    flagEstagioCongelado[1] = False;
-    flagEstagioCongelado[2] = False;
-    flagEstagioCongelado[3] = False;
-    flagEstagioCongelado[4] = False;
+    unidadeDeControle.flagEstagioCongelado[0] = False;
+    unidadeDeControle.flagEstagioCongelado[1] = False;
+    unidadeDeControle.flagEstagioCongelado[2] = False;
+    unidadeDeControle.flagEstagioCongelado[3] = False;
+    unidadeDeControle.flagEstagioCongelado[4] = False;
 
-    flagCongelarTudo = False;
+    unidadeDeControle.flagCongelarTudo = False;
 }
 
 int main (int argc, char *argv[])
@@ -888,7 +897,7 @@ int main (int argc, char *argv[])
         ciclosPorInstrucao[i] = 1;
     }
 
-    // Inicializando valores
+    // BR
     bancoRegistradores.AC = 0;
     bancoRegistradores.MQ = 0;
     bancoRegistradores.MBR = 0;
@@ -897,29 +906,46 @@ int main (int argc, char *argv[])
     bancoRegistradores.IBR = 0;
     bancoRegistradores.IR = 0;
 
+    // ULA
     unidadeLogicaAritmetica.entrada1 = 0;
     unidadeLogicaAritmetica.entrada2 = 0;
     unidadeLogicaAritmetica.operacao = soma;
     unidadeLogicaAritmetica.saida = 0;
 
+    // Barramento
     barramento.operacao = ler;
     barramento.entrada = 0;
     barramento.endereco = 0;
     barramento.saida = 0;
 
-    pcAlterado = 0;
-
+    // BR Intermediário
     bancoIntermediario.opcodeDecodificado = NENHUMA;
     bancoIntermediario.enderecoDecodificado = 0;
-
     bancoIntermediario.operacaoASerExecutada = NENHUMA;
     bancoIntermediario.dadoParaExecucao = 0;
-
     bancoIntermediario.resultadoBusca = 0;
-
     bancoIntermediario.resultado = 0;
     bancoIntermediario.resultado_auxiliar = 0;
     bancoIntermediario.instrucao = NENHUMA;
+
+
+    // UC
+    for (int i = 0; i < 5; i++)
+    {
+        unidadeDeControle.flagEstagioCongelado[i] = False;
+    }
+    unidadeDeControle.dependenciaRAW = False;
+    unidadeDeControle.enderecoRAW = 0;
+    unidadeDeControle.pcAlterado = 0;
+    unidadeDeControle.ladoInstrucao = Esquerdo;
+    unidadeDeControle.flagTerminou = False;
+    unidadeDeControle.flagCongelarTudo = False;
+    unidadeDeControle.dependenciaJump = False;
+    unidadeDeControle.dependenciaStorInstrucao = False;
+    unidadeDeControle.dependenciaStorLado = Esquerdo;
+    unidadeDeControle.flagAnularBusca = False;
+    unidadeDeControle.flagEvitarSobreescrita = False;
+    unidadeDeControle.flagPegarNovoContador = False;
     
     carregarMemoria(arquivoEntrada, &memoria, &ciclosPorInstrucao);
     char *novo_nome = cria_nome_saida(argv[2]);
