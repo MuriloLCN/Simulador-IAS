@@ -832,7 +832,7 @@ void executarUla()
         break;
     }
 
-    // Flags da UC
+    // Flags da UC *
     unidadeDeControle.par = (unidadeLogicaAritmetica.saida % 2 == 0) ? True : False;
     unidadeDeControle.zero = (unidadeLogicaAritmetica.saida == 0) ? True : False;
     unidadeDeControle.sinal = (unidadeLogicaAritmetica.saida < 0) ? True : False;
