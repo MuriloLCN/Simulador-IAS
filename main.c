@@ -584,7 +584,7 @@ void pipelineExecucao()
         break;
     case SUB_MX:
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
-        //unidadeLogicaAritmetica.entrada2 = dadoParaExecucao;
+        unidadeLogicaAritmetica.entrada2 = bancoIntermediario.dadoParaExecucao;
         unidadeLogicaAritmetica.operacao = subtracao;
         executarUla();
         bancoIntermediario.resultado = unidadeLogicaAritmetica.saida;
