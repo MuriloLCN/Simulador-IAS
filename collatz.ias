@@ -1,0 +1,72 @@
+/*
+loadm:11
+loadmm:1
+stor:2
+load:3
+load-m:4
+load|m:5
+load-|m:6 
+jump:7
+jump+:8
+add:9
+add|:10
+sub:11
+sub|:12
+mul:13
+div:14
+lsh:15
+rsh:16
+storm:17
+*/
+0
+6
+1
+2
+3
+14
+9
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+LOAD- M(2)
+STOR M(0)
+LOAD M(0)
+ADD M(2)
+STOR M(0)
+LOAD- M(5)
+ADD M(0)
+JUMP+ M(36, 0:19)
+LOAD M(1)
+ADD M(0)
+STOR M(29, 8:19)
+STOR M(31, 8:19)
+STOR M(33, 8:19)
+ADD M(2)
+STOR M(32, 8:19)
+STOR M(35, 8:19)
+LOAD M(888)
+DIV M(3)
+SUB M(2)
+JUMP+ M(33, 0:19)
+LOAD M(888)
+RSH
+STOR M(999)
+JUMP M(22, 0:19)
+LOAD MQ, M(888)
+MUL M(4)
+LOAD MQ
+ADD M(2)
+STOR M(999)
+JUMP M(22, 0:19)
+EXIT

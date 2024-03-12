@@ -22,7 +22,24 @@ Endereço | Variável | Valor que deve estar no começo
 03       | dois     | 2
 04       | tres     | 3
 05       | treze    | 13
-06       | v_inicial| Valor que se quer usar como início da sequência
-07-20    | v1-v14   | Valores que serão calculados pelo algoritmo
+06       | v_inicial| Valor que se quer usar como início da sequência (entrada)
+07-20    | v1-v14   | Valores que serão calculados pelo algoritmo (saída)
 21+      | instruções...
 PC Inicial = 21
+
+-------------------------------------------------------------------
+
+Ordenação por seleção
+
+Ordem da memória
+Endereço | Variável | Valor que deve estar no começo
+00       | step     | qualquer valor
+01       | i        | qualquer valor
+02       | min_idx  | qualquer valor
+03       | um       | 1
+04       | init_vet | 7
+05       | temp     | qualquer valor
+06       | tamanho  | O número de elementos do vetor
+07-24    | vetor    | Elementos do vetor
+25+      | Instruções...
+PC Inicial = 25
