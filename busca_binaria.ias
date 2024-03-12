@@ -18,9 +18,13 @@ lsh:15
 rsh:16
 storm:17
 */
-3 -- indice esq
-14 -- indice dir
-5 -- numero buscado
+1
+0
+0
+0
+6
+19
+3
 1
 5
 6
@@ -32,4 +36,33 @@ storm:17
 23
 29
 30
-90
+33
+LOAD M(4)
+SUB M(5)
+JUMP+ M(33, 00:19)
+LOAD M(4)
+ADD M(5)
+RSH
+STOR M(1)
+STOR M(23, 8:19)
+LOAD M(3)
+SUB M(6)
+STOR M(2)
+LOAD |M(2)|
+LSH
+STOR M(3)
+LOAD |M(2)|
+SUB |M(3)|
+JUMP+ M(33, 0:19)
+LOAD M(2)
+JUMP+ M(30, 0:19)
+LOAD M(1)
+STOR M(4)
+JUMP M(0, 0:19)
+LOAD M(1)
+STOR M(5)
+JUMP M(0, 0:19)
+LOAD M(0)
+RSH
+STOR M(0) 
+EXIT
