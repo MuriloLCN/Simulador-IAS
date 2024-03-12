@@ -21,7 +21,7 @@ Endereço | Variável | Valor que deve estar no começo
 02       | um       | 1
 03       | dois     | 2
 04       | tres     | 3
-05       | treze    | 13
+05       | quatorze | 14
 06       | v_inicial| Valor que se quer usar como início da sequência (entrada)
 07-20    | v1-v14   | Valores que serão calculados pelo algoritmo (saída)
 21+      | instruções...
