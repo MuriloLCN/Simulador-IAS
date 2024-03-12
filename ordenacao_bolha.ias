@@ -24,14 +24,14 @@ storm:17
 6
 1
 10
-1
-2
-3
+21
+20
+43
 4
-5
-6
+55
+61
 7
-8
+85
 9
 0
 1
@@ -81,7 +81,7 @@ ADD M(4)
 STOR M(1)
 LOAD M(1)
 SUB M(5)
-ADD M(4)
+STOR M(777)
 JUMP+ M(75, 20:39)
 LOAD- M(4)
 STOR M(2)
@@ -91,7 +91,7 @@ STOR M(2)
 LOAD M(2)
 SUB M(5)
 ADD M(1)
-ADD M(4)
+STOR M(777)
 JUMP+ M(75, 0:19)
 LOAD M(3)
 ADD M(2)

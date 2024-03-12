@@ -10,3 +10,19 @@ Endereço | Variável | Valor que deve estar no começo
 06-55    | vetor A  | os elementos do vetor a ser ordenado, em ordem, com início no endereço 6 (endereços não utilizados devem ser preenchidos com 0)
 55+      | instruções...
 PC inicial = 56
+
+-------------------------------------------------------------------
+
+Conjectura de collatz
+Ordem da memória
+Endereço | Variável | Valor que deve estar no começo
+00       | i        | qualquer valor
+01       | inicio_v | 6
+02       | um       | 1
+03       | dois     | 2
+04       | tres     | 3
+05       | treze    | 13
+06       | v_inicial| Valor que se quer usar como início da sequência
+07-20    | v1-v14   | Valores que serão calculados pelo algoritmo
+21+      | instruções...
+PC Inicial = 21
