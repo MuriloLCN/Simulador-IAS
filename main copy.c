@@ -4,7 +4,7 @@
 #include <math.h>
 #include <inttypes.h>
 
-#include "ias.h"
+#include "parse_entrada.h"
 
 #define TAMANHO_MEMORIA 4096
 
@@ -864,7 +864,7 @@ int main (int argc, char *argv[])
     bancoRegistradores.AC = 0;
     bancoRegistradores.MQ = 0;
     bancoRegistradores.MBR = 0;
-    bancoRegistradores.PC = 4;
+    bancoRegistradores.PC = 56;
     bancoRegistradores.MAR = 0;
     bancoRegistradores.IBR = 0;
     bancoRegistradores.IR = 0;

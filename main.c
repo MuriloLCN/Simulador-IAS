@@ -883,8 +883,8 @@ int main (int argc, char *argv[])
 {
     if (argc != 5 || strcmp(argv[1], "-p") != 0 || strcmp(argv[3], "-i") != 0)
     {
-        printf("\nParametros incorretos");
-        // TODO: Colocar mensagem mais detalhada aqui
+        printf("\nParametros incorretos, entrada correta:\n[exec] -p NOME_ARQ_ENTRADA.ias -i PC_INICIAL");
+        return 1;
     }
 
     FILE* arquivoEntrada;
