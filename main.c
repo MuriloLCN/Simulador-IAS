@@ -923,7 +923,7 @@ int main (int argc, char *argv[])
     unidadeLogicaAritmetica.operacao = soma;
     unidadeLogicaAritmetica.saida = 0;
 
-    // Barramento
+    // Barramento do IAS
     barramento.operacao = ler;
     barramento.entrada = 0;
     barramento.endereco = 0;
