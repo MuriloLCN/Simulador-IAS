@@ -115,3 +115,41 @@ A[i][j] = q + A(m) x i + j
 B[i][j] = t + A(n) x i + j
 C[i][j] = u + A(n) x i + j
 PC Inicial = 
+
+-------------------------------------------------------------------
+
+Fatorial
+Ordem da memória
+Endereço | Variável | Valor que deve estar no começo
+00       | i        | valor 1, usado para o decremento
+01       | n        | valor a ser calculado o fatorial (vai sendo decrementado cada iteração)
+02       | resultado| qualquer valor. Guarda o resultado parcial do cálculo do fatorial. No fim da execução, tem o resultado final
+03+      | Instruções...
+PC Inicial = 3
+
+-------------------------------------------------------------------
+
+Busca Binária
+Ordem da memória
+Endereço | Variável | Valor que deve estar no começo
+00       | flag     | valor 1. Se o algoritmo não encontrar o número procurado, a flag assume o valor 0
+01       | mid      | qualquer valor. Índice do meio, calculado para pegar o elemento central do vetor
+02       | temp1    | qualquer valor
+03       | temp2    | qualquer valor
+04       | esq      | posição na memória do primeiro elemento do vetor
+05       | dir      | posição na memória do último elemento do vetor
+06       | n        | número a ser buscado
+07       | vetor[0] | qualquer número, desde que o vetor seja ordenado
+08       | vetor[1] | qualquer número, desde que o vetor seja ordenado
+09       | vetor[2] | qualquer número, desde que o vetor seja ordenado
+10       | vetor[3] | qualquer número, desde que o vetor seja ordenado
+11       | vetor[4] | qualquer número, desde que o vetor seja ordenado
+12       | vetor[5] | qualquer número, desde que o vetor seja ordenado
+13       | vetor[6] | qualquer número, desde que o vetor seja ordenado
+14       | vetor[7] | qualquer número, desde que o vetor seja ordenado
+15       | vetor[8] | qualquer número, desde que o vetor seja ordenado
+16       | vetor[9] | qualquer número, desde que o vetor seja ordenado
+17       | vetor[10]| qualquer número, desde que o vetor seja ordenado
+18       | vetor[11]| qualquer número, desde que o vetor seja ordenado
+19+      | Instruções...
+PC Inicial = 19
