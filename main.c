@@ -321,8 +321,6 @@ void pipelineBusca()
 {
     /*
         Executa a fase de busca do pipeline
-
-        ... Mais documentação vem aqui
     */
     
     // Caso o a busca esteja congelada, não faça nada
@@ -363,6 +361,7 @@ void pipelineBusca()
     
     // Buscando o dado de M(PC)
     // Barramento sempre lê uma linha inteira de memória
+    // Acontece sempre por conta da possibilidade de dependências STOR
     barramento.endereco = bancoRegistradores.PC;
     barramento.operacao = ler;
     executarBarramento();
@@ -375,13 +374,28 @@ void pipelineBusca()
     
     if (unidadeDeControle.ladoInstrucao == Esquerdo)
     {
-        // Fazer coisas do lado esquerdo aqui...
+        /*
+        IBR <- MBR (20:39)
+        IR <- MBR (0:7)
+        MAR <- MBR (8:19)
+        */
+        bancoRegistradores.IBR = bancoRegistradores.MBR & 0b11111111111111111111;
+        bancoRegistradores.IR = bancoRegistradores.MBR >> 32;
+        bancoRegistradores.MAR = (bancoRegistradores.MBR >> 20) & 0b111111111111;      
+
         bancoIntermediario.resultadoBusca = ladoEsquerdo;
         unidadeDeControle.ladoInstrucao = Direito;
     }
     else 
     {
-        // Fazer coisas do lado direito aqui...
+        /*
+        IR <- MBR (20:27)
+        MAR <- MBR (28:39)
+        */
+
+        bancoRegistradores.IR = (bancoRegistradores.MBR & 0b11111111000000000000) >> 12;
+        bancoRegistradores.MAR = bancoRegistradores.MBR & 0b111111111111; 
+
         unidadeDeControle.ladoInstrucao = Esquerdo;
         bancoIntermediario.resultadoBusca = ladoDireito;
         bancoRegistradores.PC =  bancoRegistradores.PC + 1;
@@ -406,12 +420,17 @@ void pipelineDecodificacao()
     uint64_t opcode;
     uint64_t endereco;
 
-    opcode = (bancoIntermediario.resultadoBusca & 0b11111111000000000000) >> 12;
+    bancoRegistradores.IR = (bancoIntermediario.resultadoBusca & 0b11111111000000000000) >> 12;
+    bancoRegistradores.MAR = bancoIntermediario.resultadoBusca & 0b111111111111;
 
-    endereco = bancoIntermediario.resultadoBusca & 0b111111111111;
+    // opcode = (bancoIntermediario.resultadoBusca & 0b11111111000000000000) >> 12;
+    // opcode = bancoRegistradores.IR;
 
-    bancoIntermediario.opcodeDecodificado = opCodeParaInstrucao(opcode);
-    bancoIntermediario.enderecoDecodificado = endereco;
+
+    // endereco = bancoIntermediario.resultadoBusca & 0b111111111111;
+
+    bancoIntermediario.opcodeDecodificado = opCodeParaInstrucao(bancoRegistradores.IR);
+    bancoIntermediario.enderecoDecodificado = bancoRegistradores.MAR;
 
     // Marcando possível dependência STOR
     if (bancoIntermediario.opcodeDecodificado == STOR_MX_DIR)
@@ -472,6 +491,8 @@ void pipelineBuscaOperandos()
         }
     }
 
+    bancoRegistradores.MAR = bancoIntermediario.enderecoDecodificado;
+
     switch (bancoIntermediario.opcodeDecodificado)
     {
         // Casos em que o valor passado significa um endereço a ser usado
@@ -484,11 +505,13 @@ void pipelineBuscaOperandos()
         case JUMP_ESQ:
         case JUMPMais_DIR:
         case JUMPMais_ESQ:
-            bancoIntermediario.dadoParaExecucao = bancoIntermediario.enderecoDecodificado;
+            // bancoIntermediario.dadoParaExecucao = bancoIntermediario.enderecoDecodificado;
+            bancoIntermediario.dadoParaExecucao = bancoRegistradores.MAR;
             break;
         // Casos em que o valor passado significa um endereço a ser lido, cujo valor será usado
         default:
-            barramento.endereco = bancoIntermediario.enderecoDecodificado;
+            // barramento.endereco = bancoIntermediario.enderecoDecodificado;
+            barramento.endereco = bancoRegistradores.MAR;
             barramento.operacao = ler;
             executarBarramento();
             bancoIntermediario.dadoParaExecucao = converteDado(barramento.saida);
