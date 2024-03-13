@@ -91,30 +91,23 @@ PC Inicial = 25
 -------------------------------------------------------------------
 
 Multiplicação de Matrizes
+
 Ordem da memória
 Endereço | Variável | Valor que deve estar no começo
-00       | A(m)     | número de linhas da matriz A
-01       | A(n)     | número de colunas da matriz A
-02       | B(m)     | número de linhas da matriz B
-03       | B(n)     | número de colunas da matriz B
-04       | q = 18   | onde A começa na memória
-05       | t        | onde B começa na memória -> t = q + (A(m) x A(n))
-06       | u        | onde C (Matriz resultante do produto de AxB) começa na memória -> u = t + (B(m) x B(n))
-07       | loop i   | 
-08       | loop j   |
-09       | loop k   |
-10       | temp     | qualquer valor
-11       | D1       | D1 a D5, variáveis para as operações trabalharem livremente
-12       | D2
-13       | D3
-14       | D4
-15       | D5
-16       | V0       | variável que contém o valor 0
-17       | V1       | variável que contém o valor 1
-A[i][j] = q + A(m) x i + j
-B[i][j] = t + A(n) x i + j
-C[i][j] = u + A(n) x i + j
-PC Inicial = 
+00       | M        | Número de linhas de A (A é MxN)
+01       | N        | Número de colunas de A e de linhas de B (B é NxP)
+02       | P        | Número de colunas de B (resultante C é MxP)
+03       | init_a   | 11
+04       | init_b   | Qualquer valor (será calculado pelo algoritmo)
+05       | init_c   | Qualquer valor (será calculado pelo algoritmo)
+06       | i        | Qualquer valor
+07       | j        | Qualquer valor
+08       | k        | Qualquer valor
+09       | zero     | 0    
+10       | um       | 1
+11-49    | matrizes | Os valores das matrizes inseridos sequencialmente
+50+      | Instruções...
+PC Inicial = 50
 
 -------------------------------------------------------------------
 

@@ -1,0 +1,107 @@
+M // A é MxN   R1 
+N // B é NxP   C1 R2
+P // C é MxP   C2 
+init_a // fixo 
+init_b // init_a + MxN
+init_c // init_b + NxP
+i
+j
+k
+zero
+um
+
+LOAD MQ, M(M)
+MUL M(N)
+LOAD MQ
+ADD M(init_a)
+STOR M(init_b)
+
+LOAD MQ, M(N)
+MUL M(P)
+LOAD MQ
+ADD M(init_b)
+STOR M(init_c)
+
+LOAD- M(um)
+STOR M(i)
+
+laco_ext:
+
+    LOAD M(i)
+    ADD M(um)
+    STOR M(i)
+
+    LOAD M(i)
+    SUB M(M)
+    ADD M(um)
+    JUMP+ M(fim_ext)
+    
+    LOAD- M(um)
+    STOR M(j)
+
+    laco_med:
+        LOAD M(j)
+        ADD M(um)
+        STOR M(j)
+
+        LOAD M(j)
+        SUB M(P)
+        ADD M(um)
+        JUMP+ M(fim_med)
+
+        // calcular endereco de C[I][J] = init_c + i * P + j >> 999
+        LOAD MQ, M(i)
+        MUL M(P)
+        LOAD MQ
+        ADD M(j)
+        ADD M(init_c)
+        STOR M() // 999
+
+        LOAD M(zero)
+        STOR M(999)
+
+        LOAD- M(um)
+        STOR M(k)
+
+        laco_int:
+
+            LOAD M(k)
+            ADD M(um)
+            STOR M(k)
+
+            LOAD M(k)
+            SUB M(N)
+            ADD M(um)
+            JUMP+ M(fim_int)
+
+            // calcular A[i][k] = init_a + i * N + k
+
+            LOAD MQ, M(i)
+            MUL M(N)
+            LOAD MQ
+            ADD M(k)
+            ADD M(init_a)
+            STOR M() // 777
+
+            // calcular B[k][j] = init_b + k * P + j
+
+            LOAD MQ, M(k)
+            MUL M(P)
+            LOAD MQ
+            ADD M(j)
+            ADD M(init_b)
+            STOR M() // 888
+
+            LOAD MQ, M(888)
+            MUL M(777)
+            LOAD MQ
+            ADD M(999)
+            STOR M(999)
+
+            JUMP M(laco_int)
+
+        fim_int: JUMP M(laco_med)
+
+    fim_med: JUMP M(laco_ext)
+
+fim_ext: EXIT
