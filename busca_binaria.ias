@@ -24,7 +24,11 @@ storm:17
 0
 6
 19
+<<<<<<< Updated upstream
 12
+=======
+52
+>>>>>>> Stashed changes
 1
 5
 6
@@ -61,11 +65,11 @@ JUMP+ M(31, 20:39)
 LOAD M(1)
 ADD M(0)
 STOR M(4)
-JUMP M(0, 0:19)
+JUMP M(19, 0:19)
 LOAD M(1)
 SUB M(0)
 STOR M(5)
-JUMP M(0, 0:19)
+JUMP M(19, 0:19)
 LOAD M(0)
 RSH
 STOR M(0)
