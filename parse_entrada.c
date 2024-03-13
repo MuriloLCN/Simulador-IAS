@@ -277,7 +277,7 @@ void armazenaNaMemoria (int posicao, uint64_t num, uint8_t *memoria)
     for (int i = 0; i < 5; i++) 
     {
         /*
-            Em cada iteração, é lido um dos cinco blocos que compões uma dada palavra da memória, então é realizado um
+            Em cada iteração, é lido um dos cinco blocos que compõe uma dada palavra da memória, então é realizado um
             deslocamento para a direita a fim de posicionar nos 8 bits menos significativos da variável num a respectiva parte que se
             deseja escrever no momento para a memória. Ainda, é feita uma operação de máscara para isolar os 8 bits menos significativos de
             num (i.e, os bits que serão escritos na memória naquela iteração)
@@ -403,6 +403,14 @@ booleano stringEhNumericaOuNula(char* str)
 
 void pegaCiclo (char *linha, Instrucao *instrucao, int *ciclos)
 {
+    /*
+        Interpreta uma linha de atribuição de ciclos a instruções
+        Entrada:
+            char *linha: string que representa a linha lida do programa
+        Saída (por referência):
+            Instrucao *instrucao: instrução referente a atribuição de clock da linha
+            int *ciclos: quantidade de ciclos de clock necessários para a execução da instrução da linha
+    */    
     char instrucao_buffer[10], ciclos_buffer[5];
     int indice = 0, ciclos_indice=0;
     instrucao_buffer[indice] = linha[indice];
@@ -603,16 +611,6 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
 
     fgets(linha, 30, arquivoEntrada);
     tratamento_string(linha);
-    /*
-    if (linha[strlen(linha) - 1] == '\n')
-    {
-        linha[strlen(linha) - 1] = '\0';
-    }
-    if (linha[strlen(linha) - 1] == '\r')
-    {
-        linha[strlen(linha) - 1] = '\0';
-    }
-    */
     
     while (stringEhNumericaOuNula(linha) && (feof(arquivoEntrada) == 0))
     {
@@ -630,27 +628,13 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
         ultima_leitura = *arquivoEntrada;
         fgets(linha, 30, arquivoEntrada);
         tratamento_string(linha);
-        /*
-        if (linha[strlen(linha) - 1] == '\n')
-        {
-            linha[strlen(linha) - 1] = '\0';
-        }
-        if (linha[strlen(linha) - 1] == '\r')
-        {
-            linha[strlen(linha) - 1] = '\0';
-        }
-        */
-        //printf("Leitura2: %s\n", linha);
-        //printf("Eh numero: %i\n", stringEhNumericaOuNula(linha));
     }
+    
     *arquivoEntrada = ultima_leitura;
-    // printf("Saindo dos numeros linha %i\n", *numeroLinhas);
-    //*numeroLinhas -= 1; // corrige a posição atual na leitura
     /*
         Como o algoritmo tem que ler a linha para saber se é um dado numérico/nulo, o laço acaba sendo finalizado na linha em que a condição é quebrada
         com isso, é necessário retroceder (com o descritor do arquivo de entrada) para a posição de leitura antes da última linha ser processada
     */
-    //fseek(arquivoEntrada, -(strlen(linha)+1), SEEK_CUR);
 }
 
 void dumpDaMemoria(uint8_t *memoria, char nome_arq_saida[]) 
