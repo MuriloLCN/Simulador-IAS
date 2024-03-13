@@ -81,8 +81,16 @@ LOAD- M(2)
 ADD M(9)
 ADD M(17)
 JUMP+ M(fim laço)
+LOAD 
 
+LOAD MQ, M(0)
+MUL M(7)
+LOAD MQ
+ADD M(8)
+ADD M(04)
+STOR M(11)
 
 LOAD M(10)
 
 JUMP M(laço)
+EXIT
