@@ -86,3 +86,4 @@ JUMP+ M(fim laço)
 LOAD M(10)
 
 JUMP M(laço)
+EXIT
