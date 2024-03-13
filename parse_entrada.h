@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor);
+void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor, int* erroInstrucao);
 
 void armazenaNaMemoria (int posicao, uint64_t num, uint8_t *memoria);
 

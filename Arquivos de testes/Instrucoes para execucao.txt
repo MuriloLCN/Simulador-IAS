@@ -1,3 +1,62 @@
+Nesse arquivo constam as descrições das memórias para se realizar simulações com os arquivos-teste feitos, bem como
+observações para a simulação com arquivos externos.
+
+Deve-se garantir que para todo arquivo que será simulado ele atenda aos seguintes requisitos:
+
+1. O arquivo deve, obrigatoriamente, possuir uma seção declarando a quantidade de ciclos de clock para as instruções 
+logo em seu início, um exemplo está a seguir:
+
+/*
+loadm:11
+loadmm:1
+stor:2
+load:3
+load-m:4
+load|m:5
+load-|m:6 
+jump:7
+jump+:8
+add:9
+add|:10
+sub:11
+sub|:12
+mul:13
+div:14
+lsh:15
+rsh:16
+storm:17
+*/
+
+2. Os arquivos-teste providenciados devem ter as suas variáveis respeitadas de acordo com as tabelas abaixo, incluindo valores de memória que representam
+espaços em branco [e.g, a ordenação pode ser feito com um vetor de qualquer tamanho, porém alterações nele necessitariam re-calcular todos
+os endereços de modificação e de jumps, devido a natureza das instruções IAS].
+
+3. Os arquivos-teste devem ser executados com o PC inicial conforme indicado após às suas respectivas tabelas
+Exemplo:
+Windows: [programa].exe -p collatz.ias -i 21
+Linux: ./[programa] -p collatz.ias -i 21
+
+4. Para programas de teste externos, devem ser observados alguns detalhes:
+
+4.1: Deve-se garantir que instruções que são diferenciadas por seus sufixos (e.g, STOR e JUMP/JUMP+) não possuam espaços após sua escrita.
+
+4.2: Deve-se garantir que as intruções estejam escritas corretamente de modo igual aos arquivos de teste disponibilizados.
+
+4.3: Deve-se garantir que o programa, de maneira obrigatória, atinja uma instrução EXIT ao seu término, caso contrário, a simulação continuará e
+não será gerado um arquivo de saída.
+
+4.4: Como instruções não reconhecidas pelo parser de entrada são mapeadas para instruções "NENHUMA" (i.e, bolhas), ao início da simulação, deve-se
+observar se não foram emitidos nenhum aviso de "Instrução não reconhecida" no terminal. Caso o programa não reconheça alguma instrução por
+erro do(a) programador(a) em seguir os itens acima, o programa provavelmente não terá o comportamento desejado. 
+
+4.4.1: Por decisão de projeto, o simulador não impede a execução de um programa caso exista algum erro de sintaxe/instrução não reconhecida, porém
+há uma flag opcional disponibilizada na main() que pode ser alterada e que permite que a execução não seja iniciada caso hajam erros desse tipo.
+
+4.4.2: Note que ao se deixar espaços após instruções que são diferenciadas por seus sufixos pode levar a instrução errada a ser decodificada, e
+esse erro é silencioso.
+
+----------- Disposições de memórias dos arquivos de testes --------
+
 Conjectura de collatz
 Ordem da memória
 Endereço | Variável | Valor que deve estar no começo

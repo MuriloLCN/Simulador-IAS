@@ -64,15 +64,26 @@ char *cria_nome_saida(char *nome_entrada);
 void tratamento_string(char *linha);
 // *******************************************************************
 
-void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor)
+int flagInstrucaoNaoReconhecida = 0;
+
+void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor, int* erroInstrucao)
 {
-    // Carrega o arquivo de entrada para a memória
-    printf("\nEntrou no carregar memoria");
+    /*
+        Função principal de carregamento de memória: Preenche a memória passada por referência com os valores
+        lidos do arquivo de entrada, além de ler a quantidade de ciclos de cada instrução
+
+        Entradas:
+            FILE* arquivoEntrada: O arquivo contendo as intruções e diretivas do IAS
+            uint8_t** memoria: O ponteiro para a memória que deverá ser preenchida
+            int** ciclos_vetor: O ponteiro para o vetor que contém a quantidade de ciclos de clock de cada tipo de instrução
+    */
+
+    //printf("\nEntrou no carregar memoria");
     
     char instrucao[100], opcode[6], operand[6];
 
+    // Completa a memória com zeros antes de qualquer coisa
     completaMemoria(0, *memoria);
-    printf("\nMemoria completada com zeros");
 
     int linhaAtualDeLeitura = 0;
 
@@ -80,10 +91,10 @@ void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor
     int opcodeEsquerdo, enderecoEsquerdo;
     booleano controle = False;
 
-    printf("\nChamando carrega dados");
+    // printf("\nChamando carrega dados");
     carregaDados(arquivoEntrada, *memoria, *ciclos_vetor, &linhaAtualDeLeitura); // carrega os dados presentes no arquivo de entrada para a memória do IAS;
 
-    printf("\nDados carregados");
+    // printf("\nDados carregados");
     int PC = linhaAtualDeLeitura;
     
     // Lê linha a linha do arquivo de entrada
@@ -97,6 +108,9 @@ void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor
 
 
         // Removendo possíveis \n ou \n\r no final de cada linha
+
+        // OBS: Essa ordem é necessária pois Windows e Linux usam terminadores de linha diferentes
+
         if (instrucao[strlen(instrucao) - 1] == '\n')
         {
             instrucao[strlen(instrucao) - 1] = '\0';
@@ -111,6 +125,7 @@ void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor
 
         int opcodeInt = stringParaInt(opcodeString);
 
+        *erroInstrucao = flagInstrucaoNaoReconhecida;
 
         if (opcodeInt == 255 && controle == False) // se leu a última instrução e não há instrução da direita (número de instruções ímpar)
         {
@@ -149,15 +164,15 @@ int pegaParametroInstrucao(char *instrucao, int index)
     /*
         Obtém o endereço de memória inscrito em uma instrução
         Entradas:
-        char* instrucao: A string contendo a instrução
-        int index: O índice onde o valor tem início
+            char* instrucao: A string contendo a instrução
+            int index: O índice onde o valor tem início
 
         Retorno:
         O valor lido da instrução
 
         Exemplo:
         instrução = "LOAD M(57)"
-        index = 7 (57 começa na sétima posição)
+        index = 7 (57 começa na sétima posição da string)
         retorno: 57
     */
 
@@ -333,6 +348,8 @@ uint64_t inverteDado(int64_t entrada)
         Entrada:
             int64_t entrada: O valor que se quer converter
         Retorna o valor convertido para sinal magnitude
+
+        Usado como função reversa à "converteDado()"
     */
 
     if (entrada >= 0)
@@ -349,10 +366,18 @@ uint64_t inverteDado(int64_t entrada)
 
 booleano stringEhNumericaOuNula(char* str)
 {
-    
+    /*
+        Verifica se uma string representa um valor numérico ou uma string nula
+
+        Entrada:
+            char* str: A string a ser checada
+        Retorno:
+            True caso a string seja numérica/nula
+            False caso a string possua símbolos diferentes
+    */
     for (int i = 0; i < strlen(str); i++)
     {
-        printf("* %c - %i * ", str[i], str[i]);
+        // printf("* %c - %i * ", str[i], str[i]);
         switch (str[i])
         {
         case '-':
@@ -553,7 +578,7 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
 
         if (strcmp(linha, "*/")==0)
         {
-            printf("\n ** Fim da leitura dos ciclos de clock **\n");
+            // printf("\n ** Fim da leitura dos ciclos de clock **\n");
             sec_ciclos = False;
         }
 
@@ -572,7 +597,7 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
         //linhaAtual++;
     } 
 
-    for (int i=0; i<23; i++) printf("ciclos_vetor[%i] = %i\n", i, ciclos_vetor[i]);
+    // for (int i=0; i<23; i++) printf("ciclos_vetor[%i] = %i\n", i, ciclos_vetor[i]);
 
     *numeroLinhas = 0;
 
@@ -619,7 +644,7 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
         //printf("Eh numero: %i\n", stringEhNumericaOuNula(linha));
     }
     *arquivoEntrada = ultima_leitura;
-    printf("Saindo dos numeros linha %i\n", *numeroLinhas);
+    // printf("Saindo dos numeros linha %i\n", *numeroLinhas);
     //*numeroLinhas -= 1; // corrige a posição atual na leitura
     /*
         Como o algoritmo tem que ler a linha para saber se é um dado numérico/nulo, o laço acaba sendo finalizado na linha em que a condição é quebrada
@@ -631,7 +656,9 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
 void dumpDaMemoria(uint8_t *memoria, char nome_arq_saida[]) 
 {
     /*
-        Realiza um dump de todo o conteúdo da memória em um arquivo saida.txt e sua representação binária em saida_binario.txt
+        Realiza um dump de todo o conteúdo da memória em um arquivo saida_binario.txt
+
+        Útil para debug
     */
     FILE *saida;
     FILE *saidaBinaria;
@@ -771,6 +798,7 @@ booleano terminaCom(char* palavra, char* sufixo)
     }
     return True;
 }
+
 
 void converteInstrucao(char* instrucao, char* opcode, int* endereco)
 {
@@ -951,6 +979,7 @@ void converteInstrucao(char* instrucao, char* opcode, int* endereco)
         printf("\nInstrucao nao reconhecida: %s", instrucao);
         strcpy(opcode, "00000000");
         *endereco = -1;
+        flagInstrucaoNaoReconhecida = 1;
     }
 }
 
@@ -1014,8 +1043,15 @@ void printMemoria(uint8_t* memoria)
 
 char *cria_nome_saida(char *nome_entrada)
 {
+    /*
+        Cria o nome do arquivo de saída a partir do nome do arquivo de entrada
+        Entrada:
+            char* nome_entrada: O nome do arquivo de instruções passados pelo usuário
+        Saída:
+            Um ponteiro para uma string que representa o nome de entrada acrescido de ".out"
+    */
     int tamanho = strlen(nome_entrada);
-    printf("tamanho: %i\n", tamanho);
+    // printf("tamanho: %i\n", tamanho);
     
     int novo_tamanho = tamanho+4;
     char *nome_saida = malloc(novo_tamanho); //tamanho do nome de entrada mais 4
@@ -1030,11 +1066,11 @@ char *cria_nome_saida(char *nome_entrada)
 
 void tratamento_string(char *linha)
 {
-/*
-    Como a leitura da linha pode conter conteúdo indesejado, como espaços no fim ou um \n, 
-    é necessário fazer um tratamento para deixá-la em um formato padronizado de processamento.
-    Entrada: char *linha - string lida em uma linha do arquivo de instruções
-*/    
+    /*
+        Como a leitura da linha pode conter conteúdo indesejado, como espaços no fim ou um \n, 
+        é necessário fazer um tratamento para deixá-la em um formato padronizado de processamento.
+        Entrada: char *linha - string lida em uma linha do arquivo de instruções
+    */    
     int tamanho = strlen(linha);
     int i = 0;
     while ((linha[i] != ' ') && (i < tamanho)) i++; // percorre o vetor da linha até encontrar um espaço ou chegar no fim

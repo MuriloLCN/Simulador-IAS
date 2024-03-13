@@ -1,3 +1,12 @@
+/*
+    SIMULADOR IAS
+    DISCIPLINA: ARQUITETURA E ORGANIZAÇÃO DE COMPUTADORES I
+    PROFESSOR: ANDERSON FAUSTINO DA SILVA
+    ALUNOS: LEANDRO EUGÊNIO FARIAS BERTON RA: 129268
+            FERNANDO SILVA GRANDE RA: 125294
+            MURILO LUIS CALVO NEVES RA: 129037
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -904,7 +913,7 @@ void limparPipeline()
 
 int main (int argc, char *argv[])
 {
-    if (argc != 5 || strcmp(argv[1], "-p") != 0 || strcmp(argv[3], "-i") != 0)
+    if ((argc != 5) || strcmp(argv[1], "-p") != 0 || strcmp(argv[3], "-i") != 0)
     {
         printf("\nParametros incorretos, entrada correta:\n[exec] -p NOME_ARQ_ENTRADA.ias -i PC_INICIAL");
         return 1;
@@ -985,14 +994,28 @@ int main (int argc, char *argv[])
     unidadeDeControle.zero = True; // Ula começa com zero
     unidadeDeControle.sinal = False; // Par
     
-    carregarMemoria(arquivoEntrada, &memoria, &ciclosPorInstrucao);
+    int instrucaoNaoReconhecida = 0;
+
+    carregarMemoria(arquivoEntrada, &memoria, &ciclosPorInstrucao, &instrucaoNaoReconhecida);
     char *novo_nome = cria_nome_saida(argv[2]);
+
+    booleano flagImpedirExecucaoComErros = False;
+
+    if (flagImpedirExecucaoComErros == True)
+    {
+        if (instrucaoNaoReconhecida == 1)
+        {
+            printf("\nExecucao nao iniciada por existirem instrucoes nao reconhecidas");
+            return 1;
+        }
+    }
 
     simulacao();   
 
     dumpDaMemoria(memoria, novo_nome);
         
     free(memoria);
+    free(novo_nome);
     free(ciclosPorInstrucao);
     fclose(arquivoEntrada);
     return 0;

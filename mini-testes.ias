@@ -32,5 +32,3 @@ ADD M(2)
 JUMP+ M(8, 0:19)
 JUMP M(4, 0:19)
 EXIT
-
-for int i = 0; i < 6; i++
