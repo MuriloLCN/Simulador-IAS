@@ -873,7 +873,7 @@ void executarUla()
 void simulacao()
 {
     // Cada vez que é percorrido esse laço é simulado um ciclo de clock do processador
-    while (unidadeDeControle.flagTerminou != True)
+    while (unidadeDeControle.flagTerminou != True && bancoRegistradores.PC <= 4095)
     {
         pipelineEscritaResultados();
         pipelineExecucao();
