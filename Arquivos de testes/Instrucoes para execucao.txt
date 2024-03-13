@@ -55,4 +55,4 @@ Endereço | Variável | Valor que deve estar no começo
 A[i][j] = q + A(m) x i + j
 B[i][j] = t + A(n) x i + j
 C[i][j] = u + A(n) x i + j
-PC Inicial = 18
+PC Inicial = 
