@@ -999,13 +999,13 @@ int main (int argc, char *argv[])
     carregarMemoria(arquivoEntrada, &memoria, &ciclosPorInstrucao, &instrucaoNaoReconhecida);
     char *novo_nome = cria_nome_saida(argv[2]);
 
-    booleano flagImpedirExecucaoComErros = False;
+    booleano flagImpedirExecucaoComErros = True;
 
     if (flagImpedirExecucaoComErros == True)
     {
         if (instrucaoNaoReconhecida == 1)
         {
-            printf("\nExecucao nao iniciada por existirem instrucoes nao reconhecidas");
+            printf("\nExecucao nao iniciada por existirem instrucoes nao reconhecidas ou falta da secao declarativa dos ciclos de clock");
             return 1;
         }
     }

@@ -54,7 +54,7 @@ void armazenaNaMemoria (int posicao, uint64_t num, uint8_t *memoria);
 uint64_t buscaNaMemoria (uint8_t *memoria, int posicao);
 int64_t converteDado(uint64_t entrada);
 booleano stringEhNumericaOuNula(char* str);
-void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int* ciclos_vetor, int* numeroLinhas);
+void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int* ciclos_vetor, int* numeroLinhas, int* erroInstrucao);
 void dumpDaMemoria(uint8_t *memoria, char nome_arq_saida[]);
 booleano comecaCom(char* palavra, char* prefixo);
 booleano terminaCom(char* palavra, char* sufixo);
@@ -92,8 +92,12 @@ void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor
     booleano controle = False;
 
     // printf("\nChamando carrega dados");
-    carregaDados(arquivoEntrada, *memoria, *ciclos_vetor, &linhaAtualDeLeitura); // carrega os dados presentes no arquivo de entrada para a memória do IAS;
-
+    carregaDados(arquivoEntrada, *memoria, *ciclos_vetor, &linhaAtualDeLeitura, erroInstrucao); // carrega os dados presentes no arquivo de entrada para a memória do IAS;
+    
+    if (*erroInstrucao == 1)
+    {
+        return;
+    }
     // printf("\nDados carregados");
     int PC = linhaAtualDeLeitura;
     
@@ -534,7 +538,7 @@ void pegaCiclo (char *linha, Instrucao *instrucao, int *ciclos)
 
 }
 
-void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, int* numeroLinhas)
+void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, int* numeroLinhas, int* erroInstrucao)
 {
     /*
         Carrega as primeiras linhas do arquivo de entrada (i.e, que contém dados) para a memória
@@ -565,6 +569,11 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
     {
         //linhaAtual = linhaAtual + 1;
         sec_ciclos = True;
+    }
+    else 
+    {
+        printf("\nFaltando secao de declaracao de ciclos de clock");
+        *erroInstrucao = 1;
     }
 
     while (sec_ciclos == True)
