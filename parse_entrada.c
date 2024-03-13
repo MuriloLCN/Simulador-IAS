@@ -1051,9 +1051,9 @@ char *cria_nome_saida(char *nome_entrada)
             Um ponteiro para uma string que representa o nome de entrada acrescido de ".out"
     */
     int tamanho = strlen(nome_entrada);
-    // printf("tamanho: %i\n", tamanho);
+    //printf("tamanho: %i\n", tamanho);
     
-    int novo_tamanho = tamanho+4;
+    int novo_tamanho = tamanho+5;
     char *nome_saida = malloc(novo_tamanho); //tamanho do nome de entrada mais 4
     for (int i=0; i<tamanho; i++) nome_saida[i] = nome_entrada[i];
     nome_saida[tamanho] = '.';
