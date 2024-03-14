@@ -38,22 +38,11 @@ Linux: ./[programa] -p collatz.ias -i 21
 
 4. Para programas de teste externos, devem ser observados alguns detalhes:
 
-4.1: Deve-se garantir que instruções que são diferenciadas por seus sufixos (e.g, STOR e JUMP/JUMP+) não possuam espaços após sua escrita.
+4.1: Deve-se garantir que instruções que são diferenciadas por seus sufixos (e.g, STOR e JUMP/JUMP+) não possuam espaços nem caracteres estranhos após sua escrita.
 
 4.2: Deve-se garantir que as intruções estejam escritas corretamente de modo igual aos arquivos de teste disponibilizados.
 
-4.3: Deve-se garantir que o programa, de maneira obrigatória, atinja uma instrução EXIT ao seu término, caso contrário, a simulação continuará e
-não será gerado um arquivo de saída.
-
-4.4: Como instruções não reconhecidas pelo parser de entrada são mapeadas para instruções "NENHUMA" (i.e, bolhas), ao início da simulação, deve-se
-observar se não foram emitidos nenhum aviso de "Instrução não reconhecida" no terminal. Caso o programa não reconheça alguma instrução por
-erro do(a) programador(a) em seguir os itens acima, o programa provavelmente não terá o comportamento desejado. 
-
-4.4.1: Por decisão de projeto, o simulador não impede a execução de um programa caso exista algum erro de sintaxe/instrução não reconhecida, porém
-há uma flag opcional disponibilizada na main() que pode ser alterada e que permite que a execução não seja iniciada caso hajam erros desse tipo.
-
-4.4.2: Note que ao se deixar espaços após instruções que são diferenciadas por seus sufixos pode levar a instrução errada a ser decodificada, e
-esse erro é silencioso.
+4.3: Deve-se garantir que o programa, de maneira obrigatória, atinja uma instrução EXIT ao seu término, caso contrário, a simulação continuará até que o valor de PC atinja o limite de memória.
 
 ----------- Disposições de memórias dos arquivos de testes --------
 
@@ -157,12 +146,6 @@ teste_laco:
             15
             1
             0
-            8592166912
-            4294987778
-            141733928961
-            21474902024
-            55840862208
-            0
             ...
 
 -------------------------------------------------------------------
@@ -174,16 +157,6 @@ teste_bitshift:
             8
             3
             14
-            4295053312
-            141733924866
-            85899481090
-            4298194944
-            85899481091
-            4299247616
-            141738119173
-            85899481093
-            -545460846592
-            0
             ...
 
 -------------------------------------------------------------------
@@ -193,15 +166,6 @@ teste-jumps:
             6
             6
             6
-            4296077321
-            25769938946
-            4298166279
-            25769938947
-            4298170379
-            25769938945
-            4296081413
-            85900390400
-            0
             ...
 
 -------------------------------------------------------------------
@@ -212,14 +176,6 @@ teste-modulos:
             1
             1
             -1
-            12887134210
-            17183035392
-            21474971651
-            4294995972
-            141733924865
-            34363953152
-            141736013824
-            0
             ...
 
 -------------------------------------------------------------------
@@ -230,13 +186,6 @@ teste-mq_mul_div:
             7
             0
             1
-            38654750721
-            141737107456
-            141733924866
-            51540791300
-            42949808130
-            -545460846592
-            0
             ...
 
 -------------------------------------------------------------------
@@ -246,10 +195,6 @@ teste-stor:
             987
             2
             2
-            4294971394
-            81609625602
-            141738110976
-            0
             ...
 
 -------------------------------------------------------------------
@@ -259,14 +204,6 @@ teste-stor2:
             2
             1
             2
-            4296093702
-            4297138185
-            4295102466
-            4295045129
-            4296019969
-            141737070593
-            141734965248
-            0
             ...
 
 -------------------------------------------------------------------
@@ -275,7 +212,4 @@ teste-subtracao:
             10
             15
             -5
-            4294991873
-            141737062400
-            0
             ...

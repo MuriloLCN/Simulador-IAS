@@ -5,6 +5,8 @@
     ALUNOS: LEANDRO EUGÊNIO FARIAS BERTON RA: 129268
             FERNANDO SILVA GRANDE RA: 125294
             MURILO LUIS CALVO NEVES RA: 129037
+
+    Link para o github: https://github.com/MuriloLCN/Simulador-IAS
 */
 
 #include <stdio.h>
@@ -70,12 +72,6 @@ typedef enum {
 // Unidade de controle (UC)
 
 typedef struct {
-    // Flags normais de controle
-    booleano carry;
-    booleano par;
-    booleano zero;
-    booleano sinal;
-
     // Flags extras de controle
 
     // Indicam quais estágios estão congelados
@@ -323,7 +319,7 @@ UC unidadeDeControle;
     Linha: Instrução
     5-0: LOAD M(0)
     5-1: STOR M(6,8:19)
-    6-0: LOAD M(999)
+    6-0: ADD M(999)
 */
 
 void pipelineBusca()
@@ -415,8 +411,6 @@ void pipelineDecodificacao()
 {
     /*
         Executa a fase de decodificação do pipeline
-
-        ... Mais documentação vem aqui
     */
     
     // Caso o estágio esteja congelado ou seja necessário evitar a sobreescrita por dependência STOR
@@ -432,11 +426,6 @@ void pipelineDecodificacao()
     bancoRegistradores.IR = (bancoIntermediario.resultadoBusca & 0b11111111000000000000) >> 12;
     bancoRegistradores.MAR = bancoIntermediario.resultadoBusca & 0b111111111111;
 
-    // opcode = (bancoIntermediario.resultadoBusca & 0b11111111000000000000) >> 12;
-    // opcode = bancoRegistradores.IR;
-
-
-    // endereco = bancoIntermediario.resultadoBusca & 0b111111111111;
 
     bancoIntermediario.opcodeDecodificado = opCodeParaInstrucao(bancoRegistradores.IR);
     bancoIntermediario.enderecoDecodificado = bancoRegistradores.MAR;
@@ -514,12 +503,10 @@ void pipelineBuscaOperandos()
         case JUMP_ESQ:
         case JUMPMais_DIR:
         case JUMPMais_ESQ:
-            // bancoIntermediario.dadoParaExecucao = bancoIntermediario.enderecoDecodificado;
             bancoIntermediario.dadoParaExecucao = bancoRegistradores.MAR;
             break;
         // Casos em que o valor passado significa um endereço a ser lido, cujo valor será usado
         default:
-            // barramento.endereco = bancoIntermediario.enderecoDecodificado;
             barramento.endereco = bancoRegistradores.MAR;
             barramento.operacao = ler;
             executarBarramento();
@@ -532,9 +519,7 @@ void pipelineBuscaOperandos()
 void pipelineExecucao() 
 {
     /*
-        Executa a fase de Execução do pipeline
-
-        ... Mais documentação vem aqui
+        Realiza a fase de Execução do pipeline
     */
 
     // Caso a instrução anterior tenha terminado
@@ -608,7 +593,6 @@ void pipelineExecucao()
         break;
     case ADD_ABSMX:
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
-        //unidadeLogicaAritmetica.entrada2 = abs(dadoParaExecucao);
         unidadeLogicaAritmetica.entrada2 = bancoIntermediario.dadoParaExecucao;
         unidadeLogicaAritmetica.operacao = somam;
         executarUla();
@@ -623,7 +607,6 @@ void pipelineExecucao()
         break;
     case SUB_ABSMX:
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
-        //unidadeLogicaAritmetica.entrada2 = abs(dadoParaExecucao);
         unidadeLogicaAritmetica.entrada2 = bancoIntermediario.dadoParaExecucao;
         unidadeLogicaAritmetica.operacao = subtracaom;
         executarUla();
@@ -646,33 +629,52 @@ void pipelineExecucao()
         unidadeLogicaAritmetica.operacao = shiftParaDireita;
         executarUla();
         bancoIntermediario.resultado = unidadeLogicaAritmetica.saida;
-        // resultado = bancoRegistradores.AC / 2;
         break;
     case LSH:
         unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
         unidadeLogicaAritmetica.operacao = shiftParaEsquerda;
         executarUla();
         bancoIntermediario.resultado = unidadeLogicaAritmetica.saida;
-        // resultado = bancoRegistradores.AC * 2;
         break;
     case DIV_MX:
         bancoIntermediario.resultado = bancoRegistradores.AC % bancoIntermediario.dadoParaExecucao;
-        bancoIntermediario.resultado_auxiliar = bancoRegistradores.AC / bancoIntermediario.dadoParaExecucao;
+        unidadeLogicaAritmetica.entrada1 = bancoRegistradores.AC;
+        unidadeLogicaAritmetica.entrada2 = bancoIntermediario.dadoParaExecucao;
+        unidadeLogicaAritmetica.operacao = divisao;
+        executarUla();
+        // bancoIntermediario.resultado_auxiliar = bancoRegistradores.AC / bancoIntermediario.dadoParaExecucao;
+        bancoIntermediario.resultado_auxiliar = unidadeLogicaAritmetica.saida;
         bancoRegistradores.AC = bancoIntermediario.resultado;
         bancoRegistradores.MQ = bancoIntermediario.resultado_auxiliar;
         break;
     case MUL_MX:
-        bancoIntermediario.resultado = (bancoIntermediario.dadoParaExecucao * bancoRegistradores.MQ) >> 39;
-        bancoIntermediario.resultado_auxiliar = (bancoIntermediario.dadoParaExecucao * bancoRegistradores.MQ) & 0b111111111111111111111111111111111111111;
+        unidadeLogicaAritmetica.entrada1 = bancoIntermediario.dadoParaExecucao;
+        unidadeLogicaAritmetica.entrada2 = bancoRegistradores.MQ;
+        unidadeLogicaAritmetica.operacao = multiplicacao;
+        executarUla();
+        // bancoIntermediario.resultado = (bancoIntermediario.dadoParaExecucao * bancoRegistradores.MQ) >> 39;
+        // bancoIntermediario.resultado_auxiliar = (bancoIntermediario.dadoParaExecucao * bancoRegistradores.MQ) & 0b111111111111111111111111111111111111111;
+        bancoIntermediario.resultado = (unidadeLogicaAritmetica.saida) >> 39;
+        bancoIntermediario.resultado_auxiliar = (unidadeLogicaAritmetica.saida) & 0b111111111111111111111111111111111111111;
         break;
     case LOAD_ABSMX:
         bancoIntermediario.resultado = abs(bancoIntermediario.dadoParaExecucao);
         break;
     case LOAD_MenosABSMX:
-        bancoIntermediario.resultado = -1 * abs(bancoIntermediario.dadoParaExecucao);
+        unidadeLogicaAritmetica.entrada1 = -1;
+        unidadeLogicaAritmetica.entrada2 = abs(bancoIntermediario.dadoParaExecucao);
+        unidadeLogicaAritmetica.operacao = multiplicacao;
+        executarUla();
+        // bancoIntermediario.resultado = -1 * abs(bancoIntermediario.dadoParaExecucao);
+        bancoIntermediario.resultado = unidadeLogicaAritmetica.saida;
         break;
     case LOAD_MenosMX:
-        bancoIntermediario.resultado = -1 * bancoIntermediario.dadoParaExecucao;
+        unidadeLogicaAritmetica.entrada1 = -1;
+        unidadeLogicaAritmetica.entrada2 = bancoIntermediario.dadoParaExecucao;
+        unidadeLogicaAritmetica.operacao = multiplicacao;
+        executarUla();
+        // bancoIntermediario.resultado = -1 * bancoIntermediario.dadoParaExecucao;
+        bancoIntermediario.resultado = unidadeLogicaAritmetica.saida;
         break;
     case LOAD_MQ_MX:
         bancoIntermediario.resultado = bancoIntermediario.dadoParaExecucao;
@@ -698,10 +700,6 @@ void pipelineExecucao()
 
         bancoIntermediario.resultado = (barramento.saida & 0b1111111111111111111111111111000000000000);
         bancoIntermediario.resultado_auxiliar = bancoIntermediario.dadoParaExecucao;
-        // barramento.operacao = escrever;
-        // barramento.endereco = dadoParaExecucao;
-        // barramento.entrada = (barramento.saida & 0b1111111111111111111111111111000000000000) | bancoRegistradores.AC;
-        // executarBarramento();
         break;
     case EXIT:
         unidadeDeControle.flagTerminou = True;
@@ -863,17 +861,12 @@ void executarUla()
     default:
         break;
     }
-
-    // Flags da UC *
-    unidadeDeControle.par = (unidadeLogicaAritmetica.saida % 2 == 0) ? True : False;
-    unidadeDeControle.zero = (unidadeLogicaAritmetica.saida == 0) ? True : False;
-    unidadeDeControle.sinal = (unidadeLogicaAritmetica.saida < 0) ? True : False;
 }
 
 void simulacao()
 {
     // Cada vez que é percorrido esse laço é simulado um ciclo de clock do processador
-    while (unidadeDeControle.flagTerminou != True && bancoRegistradores.PC <= 4095)
+    while (unidadeDeControle.flagTerminou != True && bancoRegistradores.PC <= TAMANHO_MEMORIA - 1)
     {
         pipelineEscritaResultados();
         pipelineExecucao();
@@ -920,7 +913,7 @@ int main (int argc, char *argv[])
     }
 
     FILE* arquivoEntrada;
-    memoria = (uint8_t *) malloc (4096*40);
+    memoria = (uint8_t *) malloc (TAMANHO_MEMORIA*40);
 
     arquivoEntrada = fopen(argv[2], "r");
 
@@ -989,10 +982,6 @@ int main (int argc, char *argv[])
     unidadeDeControle.flagAnularBusca = False;
     unidadeDeControle.flagEvitarSobreescrita = False;
     unidadeDeControle.flagPegarNovoContador = False;
-    unidadeDeControle.carry = False; // Sem carry
-    unidadeDeControle.par = True; // Ula começa com zero
-    unidadeDeControle.zero = True; // Ula começa com zero
-    unidadeDeControle.sinal = False; // Par
     
     int instrucaoNaoReconhecida = 0;
 

@@ -2,9 +2,12 @@
     SIMULADOR IAS
     DISCIPLINA: ARQUITETURA E ORGANIZAÇÃO DE COMPUTADORES I
     PROFESSOR: ANDERSON FAUSTINO DA SILVA
+
     ALUNOS: LEANDRO EUGÊNIO FARIAS BERTON RA: 129268
             FERNANDO SILVA GRANDE RA: 125294
             MURILO LUIS CALVO NEVES RA: 129037
+
+    Link para o github: https://github.com/MuriloLCN/Simulador-IAS
 */
 
 #include <stdio.h>
@@ -46,7 +49,6 @@ typedef enum {
 
 // ********************** Cabeçalhos de funções **********************
 void printBits(int64_t n);
-void printMemoria(uint8_t* memoria);
 int pegaParametroInstrucao(char *instrucao, int index);
 int stringParaInt(char *bin);
 uint64_t montaLinhaDeInstrucao (int opcode1, int operand1, int opcode2, int operand2);
@@ -76,10 +78,8 @@ void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor
             FILE* arquivoEntrada: O arquivo contendo as intruções e diretivas do IAS
             uint8_t** memoria: O ponteiro para a memória que deverá ser preenchida
             int** ciclos_vetor: O ponteiro para o vetor que contém a quantidade de ciclos de clock de cada tipo de instrução
+            int* erroInstrucao: Um ponteiro para um inteiro que serve para indicar se houve ou não erros de leitura
     */
-
-    //printf("\nEntrou no carregar memoria");
-    
     char instrucao[100], opcode[6], operand[6];
 
     // Completa a memória com zeros antes de qualquer coisa
@@ -91,14 +91,14 @@ void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor
     int opcodeEsquerdo, enderecoEsquerdo;
     booleano controle = False;
 
-    // printf("\nChamando carrega dados");
-    carregaDados(arquivoEntrada, *memoria, *ciclos_vetor, &linhaAtualDeLeitura, erroInstrucao); // carrega os dados presentes no arquivo de entrada para a memória do IAS;
+    // carrega os dados presentes no arquivo de entrada para a memória do IAS
+    carregaDados(arquivoEntrada, *memoria, *ciclos_vetor, &linhaAtualDeLeitura, erroInstrucao); 
     
     if (*erroInstrucao == 1)
     {
         return;
     }
-    // printf("\nDados carregados");
+
     int PC = linhaAtualDeLeitura;
     
     // Lê linha a linha do arquivo de entrada
@@ -109,7 +109,6 @@ void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor
         char opcodeString[8];
         int endereco;
         uint64_t valor;  // Caso o endereço corresponda a um número
-
 
         // Removendo possíveis \n ou \n\r no final de cada linha
 
@@ -131,9 +130,9 @@ void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor
 
         *erroInstrucao = flagInstrucaoNaoReconhecida;
 
-        if (opcodeInt == 255 && controle == False) // se leu a última instrução e não há instrução da direita (número de instruções ímpar)
+        // se leu a última instrução e não há instrução da direita (número de instruções ímpar)
+        if (opcodeInt == 255 && controle == False) 
         {
-            //printf("\n\nopcodeint final: %i\nPosicao %i\n", opcodeInt, PC);
             uint64_t word = montaLinhaDeInstrucao(opcodeInt, endereco, 0, 0);
             armazenaNaMemoria(PC, word, *memoria);
             PC++;
@@ -151,8 +150,6 @@ void carregarMemoria(FILE* arquivoEntrada, uint8_t** memoria, int** ciclos_vetor
             }
             else
             {
-                //printf("\nprimeiro: %i, %i, pc=%i\n", opcodeEsquerdo, enderecoEsquerdo, PC);
-                
                 // Caso a instrução lida tenha que ir na direita da seção de memória, monta a linha e armazena
                 int64_t word = montaLinhaDeInstrucao(opcodeEsquerdo, enderecoEsquerdo, opcodeInt, endereco);
                 armazenaNaMemoria(PC, word, *memoria);
@@ -381,7 +378,6 @@ booleano stringEhNumericaOuNula(char* str)
     */
     for (int i = 0; i < strlen(str); i++)
     {
-        // printf("* %c - %i * ", str[i], str[i]);
         switch (str[i])
         {
         case '-':
@@ -427,8 +423,6 @@ void pegaCiclo (char *linha, Instrucao *instrucao, int *ciclos)
     instrucao_buffer[indice] = '\0';        	
     indice++;
 
-    //printf("\n%s.", instrucao_buffer);
-
     while (linha[indice] != '\0') // pega a quantiade de ciclos, contida antes do fim da string
     {
         ciclos_buffer[ciclos_indice] = linha[indice];
@@ -438,7 +432,6 @@ void pegaCiclo (char *linha, Instrucao *instrucao, int *ciclos)
     ciclos_buffer[ciclos_indice] = '\0';
     indice++;
 
-    //("\nbuffer ciclos: %s\n", ciclos_buffer);
     *ciclos = atoi(ciclos_buffer);
 
     if (strcmp(instrucao_buffer, "loadm")==0 || strcmp(instrucao_buffer, "LOADM")==0)
@@ -547,6 +540,9 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
         Entradas:
             FILE* arquivoEntrada: O descritor do arquivo de entrada
             uint8_t* memoria: A memória para armazenar os dados lidos
+            int *ciclos_vetor: Um ponteiro para o vetor onde são armazenados os ciclos de clock de cada instrução
+            int *numeroLinhas: Um ponteiro para retornar o local onde foi parada a leitura
+            int *erroInstrucao: Um ponteiro que recebe o sinal se houve ou não erros
     */
     char linha[30];
     booleano sec_ciclos = False;
@@ -595,7 +591,6 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
 
         if (strcmp(linha, "*/")==0)
         {
-            // printf("\n ** Fim da leitura dos ciclos de clock **\n");
             sec_ciclos = False;
         }
 
@@ -604,17 +599,12 @@ void carregaDados (FILE *arquivoEntrada,  uint8_t *memoria, int *ciclos_vetor, i
             Instrucao instrucao;
             int ciclo;
             pegaCiclo(linha, &instrucao, &ciclo);
-            //printf("\n%d: %d", instrucao, ciclo);
             if (instrucao == JUMP_DIR) ciclos_vetor[JUMP_ESQ] = ciclo;
             if (instrucao == JUMPMais_DIR) ciclos_vetor[JUMPMais_ESQ] = ciclo;
             if (instrucao == STOR_MX_DIR) ciclos_vetor[STOR_MX_ESQ] = ciclo;
             ciclos_vetor[instrucao] = ciclo;
         }
-
-        //linhaAtual++;
     } 
-
-    // for (int i=0; i<23; i++) printf("ciclos_vetor[%i] = %i\n", i, ciclos_vetor[i]);
 
     *numeroLinhas = 0;
 
@@ -651,7 +641,7 @@ void dumpDaMemoria(uint8_t *memoria, char nome_arq_saida[])
     /*
         Realiza um dump de todo o conteúdo da memória em um arquivo saida_binario.txt
 
-        Útil para debug
+        Útil para debug :D
     */
     FILE *saida;
     FILE *saidaBinaria;
@@ -666,16 +656,7 @@ void dumpDaMemoria(uint8_t *memoria, char nome_arq_saida[])
     {
         palavra = converteDado(buscaNaMemoria(memoria, i));
         fprintf(saida, "%"PRId64"\n", palavra);
-        /*
-        if (i <= 499)
-        {
-            dado = converteDado(palavra);
-            fprintf(saida, "%"PRId64"\n", dado);
-        }
-        else {
-            fprintf(saida, "%"PRId64"\n", palavra);
-        }
-        */
+
         char str[41];
         for (int i = 39; i >= 0; i--)
         {
@@ -1020,6 +1001,8 @@ void printBits(int64_t n)
         Imprime os últimos 40 bits de um valor int64_t como uma string de 0's e 1's
         Entradas:
             int64_t n: Um valor de entrada a ser impresso
+        
+        Útil para debug :D
     */
 
     char str[41];
@@ -1039,24 +1022,6 @@ void printBits(int64_t n)
     printf("%s", str);
 }
 
-void printMemoria(uint8_t* memoria)
-{
-    /*
-        Imprime o estado atual da memória na saída padrão
-        Entrada:
-            uint64_t* memoria: A memória simulada que será impressa
-    */
-   
-    int64_t palavra;
-
-    for (int i = 0; i < 4095; i++)
-    {
-        palavra = buscaNaMemoria(memoria, i);
-        printf("%d: ", i);
-        printBits(palavra);
-    }
-}
-
 char *cria_nome_saida(char *nome_entrada)
 {
     /*
@@ -1067,7 +1032,6 @@ char *cria_nome_saida(char *nome_entrada)
             Um ponteiro para uma string que representa o nome de entrada acrescido de ".out"
     */
     int tamanho = strlen(nome_entrada);
-    //printf("tamanho: %i\n", tamanho);
     
     int novo_tamanho = tamanho+5;
     char *nome_saida = malloc(novo_tamanho); //tamanho do nome de entrada mais 4
